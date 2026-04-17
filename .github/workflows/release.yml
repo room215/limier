@@ -1,0 +1,110 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing git tag to publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BINARY_NAME: limier
+      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      LDFLAGS: -s -w -X github.com/room215/limier/cmd.version=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build release archives
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+
+          build_target() {
+            local goos="$1"
+            local goarch="$2"
+            local ext=""
+            local archive_ext="tar.gz"
+            local binary_path="dist/${BINARY_NAME}"
+
+            if [ "$goos" = "windows" ]; then
+              ext=".exe"
+              archive_ext="zip"
+              binary_path="${binary_path}${ext}"
+            fi
+
+            local archive_name="${BINARY_NAME}_${VERSION}_${goos}_${goarch}.${archive_ext}"
+
+            echo "Building ${goos}/${goarch}"
+            GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
+              go build -trimpath -ldflags "${LDFLAGS}" -o "${binary_path}" .
+
+            if [ "$goos" = "windows" ]; then
+              zip -j "dist/${archive_name}" "${binary_path}"
+            else
+              tar -C dist -czf "dist/${archive_name}" "${BINARY_NAME}"
+            fi
+
+            rm -f "${binary_path}"
+          }
+
+          build_target darwin amd64
+          build_target darwin arm64
+          build_target linux amd64
+          build_target linux arm64
+          build_target windows amd64
+          build_target windows arm64
+
+          (
+            cd dist
+            sha256sum -- ./*.tar.gz ./*.zip > SHA256SUMS
+          )
+
+      - name: Verify embedded version
+        run: |
+          verify_dir="$(mktemp -d)"
+          tar -xzf "dist/${BINARY_NAME}_${VERSION}_linux_amd64.tar.gz" -C "${verify_dir}"
+          "${verify_dir}/${BINARY_NAME}" version | grep -F "${BINARY_NAME} ${VERSION}"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${VERSION}" >/dev/null 2>&1; then
+            gh release upload "${VERSION}" dist/* --clobber
+          else
+            gh release create "${VERSION}" dist/* \
+              --generate-notes \
+              --title "${VERSION}" \
+              --verify-tag
+          fi
