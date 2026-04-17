@@ -3,7 +3,7 @@ package adapter
 import (
 	"context"
 
-	"github.com/oneslash/limier/internal/scenario"
+	"github.com/room215/limier/internal/scenario"
 )
 
 type DependencySpec struct {

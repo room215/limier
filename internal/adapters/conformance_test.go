@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneslash/limier/internal/adapter"
-	"github.com/oneslash/limier/internal/adapters"
-	"github.com/oneslash/limier/internal/adapters/cargo"
-	"github.com/oneslash/limier/internal/adapters/npm"
-	"github.com/oneslash/limier/internal/adapters/pip"
-	"github.com/oneslash/limier/internal/scenario"
 	toml "github.com/pelletier/go-toml/v2"
+	"github.com/room215/limier/internal/adapter"
+	"github.com/room215/limier/internal/adapters"
+	"github.com/room215/limier/internal/adapters/cargo"
+	"github.com/room215/limier/internal/adapters/npm"
+	"github.com/room215/limier/internal/adapters/pip"
+	"github.com/room215/limier/internal/scenario"
 )
 
 type conformanceCase struct {

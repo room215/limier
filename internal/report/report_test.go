@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneslash/limier/internal/verdict"
+	"github.com/room215/limier/internal/verdict"
 )
 
 func TestWriteJSONUsesLimierVersionField(t *testing.T) {

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/oneslash/limier/internal/collector"
-	"github.com/oneslash/limier/internal/report"
-	"github.com/oneslash/limier/internal/rules"
-	"github.com/oneslash/limier/internal/verdict"
+	"github.com/room215/limier/internal/collector"
+	"github.com/room215/limier/internal/report"
+	"github.com/room215/limier/internal/rules"
+	"github.com/room215/limier/internal/verdict"
 )
 
 func TestEvaluateMapsRulesToVerdicts(t *testing.T) {

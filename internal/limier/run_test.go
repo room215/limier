@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneslash/limier/internal/adapter"
-	"github.com/oneslash/limier/internal/env/docker"
-	"github.com/oneslash/limier/internal/scenario"
+	"github.com/room215/limier/internal/adapter"
+	"github.com/room215/limier/internal/env/docker"
+	"github.com/room215/limier/internal/scenario"
 )
 
 func TestSideEnvUsesLimierKeys(t *testing.T) {

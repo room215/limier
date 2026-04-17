@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oneslash/limier/internal/collector"
+	"github.com/room215/limier/internal/collector"
 )
 
 const (

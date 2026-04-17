@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneslash/limier/internal/adapter"
-	"github.com/oneslash/limier/internal/analysis"
-	"github.com/oneslash/limier/internal/collector"
-	"github.com/oneslash/limier/internal/env/docker"
-	"github.com/oneslash/limier/internal/report"
-	"github.com/oneslash/limier/internal/rules"
-	"github.com/oneslash/limier/internal/scenario"
-	"github.com/oneslash/limier/internal/verdict"
+	"github.com/room215/limier/internal/adapter"
+	"github.com/room215/limier/internal/analysis"
+	"github.com/room215/limier/internal/collector"
+	"github.com/room215/limier/internal/env/docker"
+	"github.com/room215/limier/internal/report"
+	"github.com/room215/limier/internal/rules"
+	"github.com/room215/limier/internal/scenario"
+	"github.com/room215/limier/internal/verdict"
 )
 
 func TestDynamicFakeExploitScenarioBlocksCandidate(t *testing.T) {

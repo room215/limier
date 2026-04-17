@@ -1,4 +1,4 @@
-module github.com/oneslash/limier
+module github.com/room215/limier
 
 go 1.26.2
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oneslash/limier/internal/collector"
-	"github.com/oneslash/limier/internal/verdict"
+	"github.com/room215/limier/internal/collector"
+	"github.com/room215/limier/internal/verdict"
 )
 
 type DiagnosticCategory string

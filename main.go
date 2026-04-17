@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/oneslash/limier/cmd"
+	"github.com/room215/limier/cmd"
 )
 
 func main() {

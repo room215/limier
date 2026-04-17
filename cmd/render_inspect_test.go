@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneslash/limier/internal/report"
-	"github.com/oneslash/limier/internal/verdict"
+	"github.com/room215/limier/internal/report"
+	"github.com/room215/limier/internal/verdict"
 )
 
 func TestRunRenderWritesRenderedOutput(t *testing.T) {

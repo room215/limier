@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneslash/limier/internal/adapter"
-	"github.com/oneslash/limier/internal/scenario"
+	"github.com/room215/limier/internal/adapter"
+	"github.com/room215/limier/internal/scenario"
 )
 
 func TestUpdateRequirementVersionPreservesMarkersAndComments(t *testing.T) {

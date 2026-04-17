@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/oneslash/limier/internal/adapter"
-	"github.com/oneslash/limier/internal/adapters/cargo"
-	"github.com/oneslash/limier/internal/adapters/npm"
-	"github.com/oneslash/limier/internal/adapters/pip"
+	"github.com/room215/limier/internal/adapter"
+	"github.com/room215/limier/internal/adapters/cargo"
+	"github.com/room215/limier/internal/adapters/npm"
+	"github.com/room215/limier/internal/adapters/pip"
 )
 
 var registry = map[string]func() adapter.Adapter{

@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/oneslash/limier/internal/limier"
-	"github.com/oneslash/limier/internal/report"
+	"github.com/room215/limier/internal/limier"
+	"github.com/room215/limier/internal/report"
 	"github.com/spf13/cobra"
 )
 

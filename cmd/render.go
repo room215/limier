@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/oneslash/limier/internal/render"
+	"github.com/room215/limier/internal/render"
 	"github.com/spf13/cobra"
 )
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oneslash/limier/internal/report"
+	"github.com/room215/limier/internal/report"
 )
 
 func loadReport(path string) (report.Report, error) {
