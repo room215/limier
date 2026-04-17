@@ -1,0 +1,37 @@
+name: good_to_go_suppressed_benign_noise
+description: Benign stdout drift is intentionally suppressed by a sample-specific ruleset.
+rules: rules/default-with-sample-noise.yml
+expected_exit_code: 0
+want:
+  technical_verdict: expected_diff
+  operator_recommendation: good_to_go
+  finding_kinds:
+    - step_stdout_changed
+  rule_categories:
+    - suppress
+baseline:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+        - name: exercise package
+          intent: exercise
+          command: node index.js
+          stdout: version 1 banner
+candidate:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+        - name: exercise package
+          intent: exercise
+          command: node index.js
+          stdout: version 2 banner

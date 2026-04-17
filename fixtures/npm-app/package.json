@@ -1,0 +1,9 @@
+{
+  "name": "limier-npm-sample",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Repository-owned sample fixture for Limier dependency reviews",
+  "dependencies": {
+    "left-pad": "1.0.0"
+  }
+}

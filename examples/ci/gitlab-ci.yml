@@ -1,0 +1,18 @@
+stages:
+  - review
+
+limier:
+  stage: review
+  image: golang:1.26
+  services:
+    - name: docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - apt-get update && apt-get install -y docker.io
+    - LIMIER_RENDER_FORMAT=gitlab-note LIMIER_RENDER_OUTPUT=out/limier/gitlab-note.md sh ./examples/ci/run-sample.sh
+  artifacts:
+    when: always
+    paths:
+      - out/limier/

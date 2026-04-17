@@ -1,0 +1,19 @@
+version: 2.1
+
+jobs:
+  limier:
+    docker:
+      - image: cimg/go:1.26
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Run repository sample
+          command: sh ./examples/ci/run-sample.sh
+      - store_artifacts:
+          path: out/limier
+
+workflows:
+  limier:
+    jobs:
+      - limier

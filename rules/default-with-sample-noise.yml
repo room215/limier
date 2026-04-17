@@ -1,0 +1,51 @@
+version: 1
+hard_block:
+  - id: hard-block-new-curl-fetch
+    finding: new_process_exec
+    message_contains: "curl "
+    reason: candidate introduced a new outbound fetch command.
+  - id: hard-block-new-wget-fetch
+    finding: new_process_exec
+    message_contains: "wget "
+    reason: candidate introduced a new download command.
+  - id: hard-block-shell-pipe
+    finding: new_process_exec
+    message_contains: "| sh"
+    reason: candidate piped command output into a shell.
+  - id: hard-block-netcat
+    finding: new_process_exec
+    message_contains: "nc "
+    reason: candidate introduced new socket-oriented tooling.
+review:
+  - id: review-new-process
+    finding: new_process_exec
+    reason: candidate introduced a new process and needs a human explanation.
+  - id: review-missing-process
+    finding: missing_process_exec
+    reason: candidate stopped launching a process that the baseline executed.
+  - id: review-process-count-change
+    finding: process_exec_count_changed
+    reason: candidate changed how often it launches a process.
+  - id: review-candidate-diverged
+    finding: candidate_failed_or_diverged
+    reason: candidate no longer satisfied the scenario success criteria.
+  - id: review-scenario-exit-change
+    finding: scenario_exit_code_changed
+    reason: the overall scenario exit code changed.
+  - id: review-step-exit-change
+    finding: step_exit_code_changed
+    reason: a scenario step started exiting differently.
+  - id: review-step-count-change
+    finding: step_count_changed
+    reason: the scenario no longer follows the same execution shape.
+  - id: review-stdout-change
+    finding: step_stdout_changed
+    reason: step stdout changed and should be checked for new behavior.
+  - id: review-stderr-change
+    finding: step_stderr_changed
+    reason: step stderr changed and should be checked for suspicious activity.
+suppress:
+  - id: suppress-sample-version-banner
+    finding: step_stdout_changed
+    step: exercise package
+    reason: sample fixture output is intentionally allowed to drift for this benign validation case.

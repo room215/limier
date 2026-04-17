@@ -1,0 +1,41 @@
+name: needs_review_new_helper_process
+description: Candidate adds a new helper process that should be reviewed but not hard-blocked.
+rules: rules/default.yml
+expected_exit_code: 0
+want:
+  technical_verdict: unexpected_diff
+  operator_recommendation: needs_review
+  finding_kinds:
+    - new_process_exec
+  rule_categories:
+    - review
+baseline:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+        - name: exercise package
+          intent: exercise
+          command: node index.js
+          stdout: "......limier"
+candidate:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+        - name: exercise package
+          intent: exercise
+          command: node index.js
+          stdout: "......limier"
+      events:
+        - kind: process.exec
+          step: exercise package
+          command: node scripts/report.js

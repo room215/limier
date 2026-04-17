@@ -1,0 +1,23 @@
+pipeline {
+  agent any
+
+  stages {
+    stage('Limier') {
+      steps {
+        sh '''
+          docker run --rm \
+            -v "$PWD:/work" \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -w /work \
+            golang:1.26 \
+            sh -lc 'apt-get update && apt-get install -y docker.io && sh ./examples/ci/run-sample.sh'
+        '''
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'out/limier/**', fingerprint: true
+        }
+      }
+    }
+  }
+}

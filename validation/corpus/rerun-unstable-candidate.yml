@@ -1,0 +1,28 @@
+name: rerun_unstable_candidate
+description: Candidate output changes across repeats and should be rerun.
+rules: rules/default.yml
+expected_exit_code: 0
+want:
+  technical_verdict: inconclusive
+  operator_recommendation: rerun
+  finding_kinds:
+    - inconclusive_run
+  diagnostic_code: candidate_repeats_unstable
+baseline:
+  stable: true
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
+candidate:
+  stable: false
+  runs:
+    - exit_code: 0
+      steps:
+        - name: install dependency
+          intent: install
+          command: npm install
+          stdout: installed cleanly
