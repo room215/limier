@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./docs/public/logo.png" alt="Limier logo" width="220">
+</p>
+
 # Limier
 
 Limier is a fixture-based dependency behavior review tool. It compares a baseline package version with a candidate version, captures the behavior each one triggers in a controlled sample application, and turns the diff into one of four reviewer-facing outcomes:
