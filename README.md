@@ -32,6 +32,54 @@ The script writes:
 - `out/limier/build-summary.md`
 - `out/limier/evidence/`
 
+## Container Image
+
+Release tags also publish a hardened OCI image to GitHub Container Registry at `ghcr.io/<owner>/<repo>`.
+
+The image is intentionally minimal:
+
+- statically linked `limier` binary
+- Docker CLI included because Limier shells out to `docker`
+- distroless runtime
+- non-root default user
+- no package manager or shell in the final image
+
+When running Limier from the container against a host Docker daemon, mount your repository at the same absolute path inside the container that it has on the host. This keeps Limier's fixture paths valid when the inner Docker daemon bind-mounts them.
+
+```sh
+docker run --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$PWD:$PWD" \
+  -w "$PWD" \
+  ghcr.io/<owner>/<repo>:<tag> \
+  run \
+  --ecosystem npm \
+  --package left-pad \
+  --current 1.0.0 \
+  --candidate 1.1.0 \
+  --fixture fixtures/npm-app \
+  --scenario scenarios/npm.yml \
+  --rules rules/default.yml \
+  --report out/limier/report.json \
+  --summary out/limier/summary.md \
+  --evidence out/limier/evidence
+```
+
+If your Docker socket is not accessible to the default non-root user, add the socket group with `--group-add` or override the container user explicitly for that environment.
+
+For example, this is the most portable fallback when the mounted socket is root-owned:
+
+```sh
+docker run --rm \
+  --user 0:0 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$PWD:$PWD" \
+  -w "$PWD" \
+  ghcr.io/<owner>/<repo>:<tag> version
+```
+
+For the easiest containerized setup, set `capture_host_signals: false` in the scenario. Full host-signal capture still requires Linux plus `bpftrace` and additional host integration.
+
 ## Core Commands
 
 Build and test with the standard Go toolchain:

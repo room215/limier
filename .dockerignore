@@ -1,0 +1,12 @@
+.DS_Store
+.git
+.github
+AGENTS.md
+bin
+dist
+docs
+examples
+fixtures
+out
+plans
+validation
