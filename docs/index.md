@@ -59,4 +59,5 @@ The current adapters are:
 - [Getting Started](/guide/getting-started) if you want a first successful run as quickly as possible.
 - [Review Your Own Project](/guide/review-your-own-project) if you already know which dependency and fixture you want to test.
 - [Understand Results](/guide/understand-results) if you have a report and want to know what to do with it.
+- [Use With Codex](/guide/use-with-codex) if you want to package repository knowledge as a Codex skill or plugin.
 - [CLI Reference](/reference/cli) if you want the exact commands and flags.

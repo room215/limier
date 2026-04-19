@@ -1,0 +1,7 @@
+interface:
+  display_name: "Limier CLI"
+  short_description: "Run and interpret Limier reviews"
+  default_prompt: "Use $limier-cli to run a Limier dependency review or explain an existing Limier report."
+
+policy:
+  allow_implicit_invocation: true
