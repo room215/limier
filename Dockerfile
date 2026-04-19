@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG GO_VERSION=1.26.2
+ARG GO_VERSION
 ARG DOCKER_CLI_IMAGE=docker:28-cli
 ARG DISTROLESS_IMAGE=gcr.io/distroless/static-debian12:nonroot
 
