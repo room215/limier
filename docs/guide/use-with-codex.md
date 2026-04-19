@@ -9,7 +9,7 @@ If you want an AI agent to work with this repository effectively, the current Co
 
 For this repository, the recommended starting point is the repo-local skill:
 
-- [`.agents/skills/limier-cli/SKILL.md`](https://github.com/room215/limier/blob/main/.agents/skills/limier-cli/SKILL.md)
+- [`.agents/skills/limier-cli/SKILL.md`](../../.agents/skills/limier-cli/SKILL.md)
 
 ## What The Repo Skill Does
 

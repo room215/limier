@@ -136,8 +136,8 @@ When debugging, inspect the scenario, evidence bundle, and environment assumptio
 
 When a task involves changing review behavior:
 
-- read [Scenario File](../../docs/reference/scenario-file.md) before changing scenario structure
-- read [Rules File](../../docs/reference/rules-file.md) before changing verdict logic
+- read [Scenario File](../../../docs/reference/scenario-file.md) before changing scenario structure
+- read [Rules File](../../../docs/reference/rules-file.md) before changing verdict logic
 - prefer the smallest change that affects the user-visible recommendation
 - protect user-visible behavior with focused tests, especially around verdict classification and report generation
 
