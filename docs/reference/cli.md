@@ -84,7 +84,7 @@ limier version
 Limier also supports simple logging controls through environment variables:
 
 - `LIMIER_LOG_LEVEL`: `debug`, `info`, `warn`, or `error`
-- `LIMIER_LOG_FORMAT`: `json` or text
+- `LIMIER_LOG_FORMAT`: set to `json` for structured output; any other value, or leaving it unset, uses the default text format
 
 Example:
 

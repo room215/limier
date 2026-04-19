@@ -22,7 +22,7 @@ jobs:
   review-upgrade:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -65,6 +65,8 @@ jobs:
   limier:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
 ```
+
+That read-only review job is a good default, but remember that `pull_request` runs from forks and Dependabot PRs get a read-only `GITHUB_TOKEN`, so comment, label, merge, or other write-back actions should happen in a separate privileged follow-up workflow such as `workflow_run`.
 
 ::: warning Avoid `pull_request_target` for the review run
 The safest default is to run Limier in the unprivileged `pull_request` context and keep commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if you need it.
@@ -110,5 +112,7 @@ docker run --rm \
   --summary out/limier/summary.md \
   --evidence out/limier/evidence
 ```
+
+If that command fails with a Docker socket permission error, make sure the host user already has access to `/var/run/docker.sock`. On Linux, a common fix is to add the Docker group inside the container with `--group-add "$(getent group docker | cut -d: -f3)"` alongside `--user`.
 
 For the easiest containerized setup, disable host-signal capture in the scenario.
