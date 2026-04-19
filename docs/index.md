@@ -3,6 +3,9 @@ layout: home
 
 hero:
   name: Limier
+  image:
+    src: /logo.png
+    alt: Limier logo
   text: "Understand what a dependency upgrade actually did"
   tagline: "Limier compares two versions of the same dependency in a controlled fixture and tells you whether the change looks safe, needs review, should be blocked, or should be rerun."
   actions:

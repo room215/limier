@@ -12,6 +12,10 @@ export default defineConfig({
   // Change this to / if you move the docs to a custom domain or user site.
   base: '/limier/',
   themeConfig: {
+    logo: {
+      src: '/logo.png',
+      alt: 'Limier logo'
+    },
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Reference', link: '/reference/cli' },
