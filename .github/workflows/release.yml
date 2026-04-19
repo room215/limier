@@ -101,7 +101,13 @@ jobs:
         run: |
           verify_dir="$(mktemp -d)"
           tar -xzf "dist/${BINARY_NAME}_${VERSION}_linux_amd64.tar.gz" -C "${verify_dir}"
-          "${verify_dir}/${BINARY_NAME}" version | grep -F "${BINARY_NAME} ${VERSION}"
+          actual_version="$("${verify_dir}/${BINARY_NAME}" version)"
+          expected_version="${BINARY_NAME} ${VERSION}"
+
+          if [ "${actual_version}" != "${expected_version}" ]; then
+            echo "embedded version mismatch: got '${actual_version}', want '${expected_version}'" >&2
+            exit 1
+          fi
 
       - name: Set up QEMU
         # docker/setup-qemu-action v3
