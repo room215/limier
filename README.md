@@ -134,6 +134,20 @@ go run . inspect --input out/limier/report.json
 go run . render --format build-summary --input out/limier/report.json
 ```
 
+## Codex Agent Skill
+
+This repository now includes a repo-local Codex skill at `.agents/skills/limier-cli/`.
+
+Use that when you want an AI agent to understand Limier's intended workflows in this repository, including:
+
+- when to choose `run`, `inspect`, or `render`
+- which sample fixture, scenario, and rules files belong together
+- how to interpret `good_to_go`, `needs_review`, `block`, and `rerun`
+
+If you want marketplace packaging or extra integrations, treat a Codex plugin as a later packaging step around the skill rather than a replacement for the CLI itself.
+
+See `docs/guide/use-with-codex.md` for the current recommendation and layout.
+
 ## Phase 7 Assets
 
 - Sample fixture and scenario: `fixtures/` and `scenarios/`

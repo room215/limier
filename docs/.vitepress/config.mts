@@ -15,6 +15,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Reference', link: '/reference/cli' },
+      { text: 'Agent Guide', link: '/guide/use-with-codex' },
       { text: 'Project Notes', link: '/launch-readiness' }
     ],
     sidebar: [
@@ -25,6 +26,7 @@ export default defineConfig({
           { text: 'Getting Started', link: '/guide/getting-started' },
           { text: 'Review Your Own Project', link: '/guide/review-your-own-project' },
           { text: 'Understand Results', link: '/guide/understand-results' },
+          { text: 'Use With Codex', link: '/guide/use-with-codex' },
           { text: 'Use In CI', link: '/guide/ci-and-deploy' }
         ]
       },
