@@ -1,0 +1,82 @@
+{
+  "svgPath": "/Users/sardo/Projects/t/docs/diagrams/limier-operation-flow.svg",
+  "previewPath": "/Users/sardo/Projects/t/docs/diagrams/limier-operation-flow.preview.png",
+  "screenshot": {
+    "width": 4718,
+    "height": 829
+  },
+  "exportSummary": {
+    "width": 4718,
+    "height": 829.25,
+    "exportPadding": 20
+  },
+  "inspectSummary": {
+    "inputKind": "scene",
+    "totalElements": 74,
+    "nonDeletedElements": 74,
+    "deletedElements": 0,
+    "elementTypeCounts": {
+      "text": 32,
+      "ellipse": 5,
+      "rectangle": 14,
+      "diamond": 2,
+      "arrow": 17,
+      "line": 4
+    },
+    "shapeElementCount": 21,
+    "linearElementCount": 17,
+    "imageElementCount": 0,
+    "frameCount": 0,
+    "textElementCount": 32,
+    "editableGeometryCount": 38,
+    "duplicateIds": [],
+    "invisiblySmallElementIds": [],
+    "missingFileIds": [],
+    "orphanedFileIds": [],
+    "bindingIssues": [],
+    "frameIssues": [],
+    "qualityWarnings": [],
+    "qualityFindings": [],
+    "qualityMetrics": {
+      "edgeNodeCrossings": 0,
+      "edgeEdgeCrossings": 0,
+      "disconnectedArrows": 0,
+      "nodeOverlaps": 0,
+      "labelOverflows": 0,
+      "edgeLabelOverlaps": 0,
+      "textOverlaps": 0,
+      "crowdedLabels": 0,
+      "diagramSprawl": 0,
+      "occupancyRatio": 0.361,
+      "maxEdgeLength": 749,
+      "sameRankBentEdgeCount": 0,
+      "worstEdgeDetourRatio": 3.73,
+      "longEdgeNormalized": 3
+    },
+    "bounds": {
+      "minX": 100,
+      "minY": -235,
+      "maxX": 4778,
+      "maxY": 554.25
+    }
+  },
+  "warnings": [],
+  "hardFailures": [],
+  "passed": true,
+  "metadata": {
+    "layoutEngine": "legacy",
+    "layoutEngineReason": "manual layout remains on the deterministic legacy path",
+    "preset": "clean-flowchart"
+  },
+  "policy": {
+    "maxWarnings": 0,
+    "minimumEditableElements": 18,
+    "requireStructuredScene": true
+  },
+  "manualChecklist": [
+    "Open the preview PNG and confirm labels are readable without overlap.",
+    "Confirm arrows connect the intended shapes and do not float in empty space.",
+    "Confirm the diagram fits the canvas without major clipping.",
+    "Confirm frames, if present, wrap the intended nodes."
+  ]
+}
