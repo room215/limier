@@ -32,9 +32,26 @@ The script writes:
 - `out/limier/build-summary.md`
 - `out/limier/evidence/`
 
+## Dependabot Integration
+
+Limier can plug into Dependabot pull requests, but that integration lives in repository wiring rather than in Limier's core CLI.
+
+For a GitHub-based setup, the repository should add:
+
+- a `.github/dependabot.yml` file so Dependabot opens update pull requests
+- a workflow or workflow job triggered by `pull_request`
+- a Dependabot-only gate such as `if: github.event.pull_request.user.login == 'dependabot[bot]'`
+- a metadata step such as `dependabot/fetch-metadata` to map the pull request to `--ecosystem`, `--package`, `--current`, and `--candidate`
+
+The safest default is to run Limier in the unprivileged `pull_request` context and keep any commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if needed. Avoid checking out and running pull request code from `pull_request_target`.
+
+For GitHub-hosted runners, assume Docker is available but full host-signal capture is not. A stock hosted runner should therefore use a CI-specific scenario with `capture_host_signals: false`, or you should run Limier on a self-hosted Linux runner with `bpftrace` installed when full host telemetry is required.
+
+The sample runner in `examples/ci/run-sample.sh` is intentionally hardcoded to a repository-owned demo dependency upgrade. It is a runnable example, not the Dependabot glue layer.
+
 ## Container Image
 
-Release tags also publish a hardened OCI image to GitHub Container Registry at `ghcr.io/room215/limier` (forks should substitute their own repository path).
+Release tags also publish a hardened OCI image to GitHub Container Registry at `ghcr.io/room215/limier` (forks should substitute their own repository path). Published image tags use normalized semver such as `0.1.1`, `0.1`, `0`, and `latest`.
 
 The image is intentionally minimal:
 
@@ -52,7 +69,7 @@ docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$PWD:$PWD" \
   -w "$PWD" \
-  ghcr.io/room215/limier:<tag> \
+  ghcr.io/room215/limier:<version> \
   run \
   --ecosystem npm \
   --package left-pad \
@@ -78,7 +95,7 @@ docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$PWD:$PWD" \
   -w "$PWD" \
-  ghcr.io/room215/limier:<tag> version
+  ghcr.io/room215/limier:<version> version
 ```
 
 For the easiest containerized setup, set `capture_host_signals: false` in the scenario. Full host-signal capture still requires Linux plus `bpftrace` and additional host integration.
