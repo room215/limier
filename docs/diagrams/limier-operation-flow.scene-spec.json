@@ -1,0 +1,327 @@
+{
+  "document": {
+    "layout": "manual",
+    "preset": "clean-flowchart",
+    "theme": "light",
+    "background": "#f6f8fb",
+    "padding": 72,
+    "gapX": 96,
+    "gapY": 72,
+    "nodeWidth": 220,
+    "nodeHeight": 92,
+    "calloutGap": 28,
+    "maxWarnings": 0,
+    "minimumEditableElements": 18
+  },
+  "nodes": [
+    {
+      "id": "section-inputs",
+      "kind": "text",
+      "label": "1. Request and setup",
+      "x": 120,
+      "y": 36,
+      "width": 220,
+      "height": 36
+    },
+    {
+      "id": "section-runs",
+      "kind": "text",
+      "label": "2. Paired execution",
+      "x": 1570,
+      "y": 36,
+      "width": 220,
+      "height": 36
+    },
+    {
+      "id": "section-decision",
+      "kind": "text",
+      "label": "3. Decision engine",
+      "x": 2400,
+      "y": 36,
+      "width": 220,
+      "height": 36
+    },
+    {
+      "id": "section-outputs",
+      "kind": "text",
+      "label": "4. Outputs",
+      "x": 3400,
+      "y": 28,
+      "width": 140,
+      "height": 36
+    },
+    {
+      "id": "trigger",
+      "role": "terminator",
+      "label": "Dependency update needs review",
+      "x": 100,
+      "y": 180,
+      "width": 290,
+      "height": 92
+    },
+    {
+      "id": "inputs",
+      "role": "data",
+      "label": "Choose the package versions, fixture, scenario, and rules",
+      "x": 470,
+      "y": 170,
+      "width": 360,
+      "height": 112
+    },
+    {
+      "id": "run",
+      "role": "process",
+      "label": "Run `limier run`",
+      "x": 910,
+      "y": 182,
+      "width": 250,
+      "height": 88
+    },
+    {
+      "id": "load",
+      "role": "process",
+      "label": "Validate inputs, load the scenario and rules, and choose the ecosystem adapter",
+      "x": 1240,
+      "y": 160,
+      "width": 410,
+      "height": 132
+    },
+    {
+      "id": "baseline",
+      "role": "process",
+      "label": "Baseline side:\nclone the fixture,\npin the current version,\nand run the scenario",
+      "x": 1720,
+      "y": 92,
+      "width": 360,
+      "height": 136
+    },
+    {
+      "id": "candidate",
+      "role": "process",
+      "label": "Candidate side:\nclone the fixture,\npin the new version,\nand run the same scenario",
+      "x": 1720,
+      "y": 334,
+      "width": 360,
+      "height": 136
+    },
+    {
+      "id": "stability",
+      "role": "branch-split",
+      "label": "Did both sides succeed\nconsistently?",
+      "x": 2230,
+      "y": 188,
+      "width": 300,
+      "height": 120
+    },
+    {
+      "id": "rerun",
+      "role": "terminator",
+      "label": "`rerun`",
+      "x": 2125,
+      "y": 430,
+      "width": 260,
+      "height": 84
+    },
+    {
+      "id": "compare",
+      "role": "process",
+      "label": "Compare exit codes, step outputs, and captured events",
+      "x": 2550,
+      "y": 186,
+      "width": 360,
+      "height": 116
+    },
+    {
+      "id": "rules",
+      "role": "process",
+      "label": "Match the findings against suppress, review, and hard-block rules",
+      "x": 2995,
+      "y": 212,
+      "width": 380,
+      "height": 128
+    },
+    {
+      "id": "write",
+      "role": "data",
+      "label": "Write `report.json`, `summary.md`, and the `evidence/` bundle",
+      "x": 3460,
+      "y": 184,
+      "width": 390,
+      "height": 120
+    },
+    {
+      "id": "recommendation",
+      "role": "branch-split",
+      "label": "Operator\nrecommendation",
+      "x": 3925,
+      "y": 194,
+      "width": 250,
+      "height": 100
+    },
+    {
+      "id": "good",
+      "role": "terminator",
+      "label": "`good_to_go`",
+      "x": 4250,
+      "y": 88,
+      "width": 250,
+      "height": 76
+    },
+    {
+      "id": "review",
+      "role": "terminator",
+      "label": "`needs_review`",
+      "x": 4250,
+      "y": 206,
+      "width": 250,
+      "height": 76
+    },
+    {
+      "id": "block",
+      "role": "terminator",
+      "label": "`block`",
+      "x": 4250,
+      "y": 324,
+      "width": 250,
+      "height": 76
+    },
+    {
+      "id": "inspect",
+      "role": "process",
+      "label": "`inspect` explains an existing report without rerunning",
+      "x": 3220,
+      "y": 416,
+      "width": 360,
+      "height": 96
+    },
+    {
+      "id": "render",
+      "role": "process",
+      "label": "`render` turns the same report into CI or PR-ready output",
+      "x": 3890,
+      "y": 416,
+      "width": 340,
+      "height": 96
+    }
+  ],
+  "edges": [
+    {
+      "id": "trigger-inputs",
+      "from": "trigger",
+      "to": "inputs"
+    },
+    {
+      "id": "inputs-run",
+      "from": "inputs",
+      "to": "run"
+    },
+    {
+      "id": "run-load",
+      "from": "run",
+      "to": "load"
+    },
+    {
+      "id": "load-baseline",
+      "from": "load",
+      "to": "baseline"
+    },
+    {
+      "id": "load-candidate",
+      "from": "load",
+      "to": "candidate"
+    },
+    {
+      "id": "baseline-stability",
+      "from": "baseline",
+      "to": "stability"
+    },
+    {
+      "id": "candidate-stability",
+      "from": "candidate",
+      "to": "stability"
+    },
+    {
+      "id": "stability-rerun",
+      "from": "stability",
+      "to": "rerun",
+      "label": "no"
+    },
+    {
+      "id": "stability-compare",
+      "from": "stability",
+      "to": "compare",
+      "label": "yes"
+    },
+    {
+      "id": "compare-rules",
+      "from": "compare",
+      "to": "rules"
+    },
+    {
+      "id": "rules-write",
+      "from": "rules",
+      "to": "write"
+    },
+    {
+      "id": "write-recommendation",
+      "from": "write",
+      "to": "recommendation"
+    },
+    {
+      "id": "recommendation-good",
+      "from": "recommendation",
+      "to": "good",
+      "label": "no diff or expected diff"
+    },
+    {
+      "id": "recommendation-review",
+      "from": "recommendation",
+      "to": "review",
+      "label": "unsuppressed findings"
+    },
+    {
+      "id": "recommendation-block",
+      "from": "recommendation",
+      "to": "block",
+      "label": "hard-block rule"
+    },
+    {
+      "id": "write-inspect",
+      "from": "write",
+      "to": "inspect",
+      "label": "explain"
+    },
+    {
+      "id": "write-render",
+      "from": "write",
+      "to": "render",
+      "label": "publish"
+    }
+  ],
+  "callouts": [
+    {
+      "id": "ecosystems-note",
+      "target": "run",
+      "label": "Supported ecosystems today: npm, pip, and cargo.",
+      "placement": "top"
+    },
+    {
+      "id": "repeats-note",
+      "target": "baseline",
+      "label": "Separate temporary workspaces, usually repeated 2x, turn instability into `rerun` instead of a false approval.",
+      "placement": "left"
+    },
+    {
+      "id": "events-note",
+      "target": "compare",
+      "label": "Evidence includes stdout, stderr, exit codes, and optional Linux host-signal events when capture is enabled.",
+      "placement": "bottom"
+    },
+    {
+      "id": "reuse-note",
+      "target": "write",
+      "label": "`inspect` and `render` both reuse the saved report. They do not execute the fixture again.",
+      "placement": "left"
+    }
+  ]
+}
