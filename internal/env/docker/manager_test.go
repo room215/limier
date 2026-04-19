@@ -136,9 +136,10 @@ func TestRemoveContainerIgnoresMissingContainer(t *testing.T) {
 func TestRunLifecycleCommandBoundsCapturedOutput(t *testing.T) {
 	t.Parallel()
 
+	// Use shell builtins so the fixture output is stable across runners.
 	binary := writeFakeDocker(t,
-		`awk 'BEGIN { for (i = 0; i < 20000; i++) printf "x" }'`,
-		`awk 'BEGIN { for (i = 0; i < 20000; i++) printf "y" > "/dev/stderr" }'`,
+		`i=0; while [ "$i" -lt 20000 ]; do printf "x"; i=$((i + 1)); done`,
+		`i=0; while [ "$i" -lt 20000 ]; do printf "y" >&2; i=$((i + 1)); done`,
 		`exit 1`,
 	)
 	manager := Manager{binary: binary}
