@@ -133,9 +133,7 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
           images: ghcr.io/${{ github.repository }}
-          # Preserve the exact Git tag (for example v1.2.3) alongside normalized semver tags.
           tags: |
-            type=raw,value=${{ env.VERSION }}
             type=semver,pattern={{version}},value=${{ env.VERSION }}
             type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }}
             type=semver,pattern={{major}},value=${{ env.VERSION }}

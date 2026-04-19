@@ -26,6 +26,7 @@ Current cases:
 - Security engineer: inspect a report where a candidate introduces a new helper process and confirm the report surfaces the changed step, phase, and evidence path.
 - Security or platform reviewer: inspect a blocked install-time network fetch and confirm the default rules make the hard-block reason explicit.
 - CI operator: inspect an inconclusive report and use `summary.md`, `report.json`, and `limier inspect` to understand why the run should be rerun.
+- Platform or security engineer: wire Limier into Dependabot pull requests and understand when a hosted runner should use stdout/stderr-only capture versus a self-hosted Linux runner with `bpftrace`.
 
 ## Launch Checklist
 
@@ -36,3 +37,5 @@ Current cases:
 - Default rules are shaped around suspicious dependency behavior, especially new process execution and install-time drift.
 - Summary, render, and inspect outputs expose repeat stability and whether a finding happened during install or execution.
 - Documentation states the narrow product scope directly and links to a runnable sample workflow.
+- Documentation distinguishes the repository-owned sample CI workflow from a real Dependabot-triggered pull-request integration.
+- Hosted GitHub Actions guidance makes the `capture_host_signals: false` versus self-hosted `bpftrace` tradeoff explicit.

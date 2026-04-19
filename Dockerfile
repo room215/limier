@@ -28,6 +28,7 @@ ARG VERSION=dev
 
 LABEL org.opencontainers.image.title="Limier"
 LABEL org.opencontainers.image.description="Fixture-based dependency behavior review tool"
+LABEL org.opencontainers.image.source="https://github.com/room215/limier"
 LABEL org.opencontainers.image.version="${VERSION}"
 
 ENV HOME=/tmp \
