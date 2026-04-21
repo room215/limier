@@ -10,7 +10,7 @@ The report is the source of truth. Rendered outputs are just alternate presentat
 
 ## Minimal GitHub Actions Example
 
-This repository includes a small sample workflow:
+This repository includes a small sample workflow for manually running the repository-owned demo assets:
 
 ```yaml
 name: limier
@@ -53,8 +53,9 @@ For GitHub, the usual setup is:
 - trigger a workflow on `pull_request`
 - gate the job with `github.event.pull_request.user.login == 'dependabot[bot]'`
 - use PR metadata to fill in `--ecosystem`, `--package`, `--current`, and `--candidate`
+- grant `pull-requests: read` if you use `dependabot/fetch-metadata`
 
-A minimal gate looks like this:
+A minimal gate and permission set looks like this:
 
 ```yaml
 on:
@@ -64,9 +65,12 @@ on:
 jobs:
   limier:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      contents: read
+      pull-requests: read
 ```
 
-That read-only review job is a good default, but remember that `pull_request` runs from forks and Dependabot PRs get a read-only `GITHUB_TOKEN`, so comment, label, merge, or other write-back actions should happen in a separate privileged follow-up workflow such as `workflow_run`.
+That read-only review job is a good default. If it uses `dependabot/fetch-metadata`, remember that once a GitHub Actions `permissions` block is present, omitted scopes default to `none`, so `pull-requests: read` must be declared explicitly. Also remember that `pull_request` runs from forks and Dependabot PRs get a read-only `GITHUB_TOKEN`, so comment, label, merge, or other write-back actions should happen in a separate privileged follow-up workflow such as `workflow_run`.
 
 ::: warning Avoid `pull_request_target` for the review run
 The safest default is to run Limier in the unprivileged `pull_request` context and keep commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if you need it.
