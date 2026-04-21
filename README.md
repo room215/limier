@@ -157,10 +157,3 @@ Use that when you want an AI agent to understand Limier's intended workflows in 
 If you want marketplace packaging or extra integrations, treat a Codex plugin as a later packaging step around the skill rather than a replacement for the CLI itself.
 
 See `docs/guide/use-with-codex.md` for the current recommendation and layout.
-
-## Phase 7 Assets
-
-- Sample fixture and scenario: `fixtures/` and `scenarios/`
-- Default and sample-specific rules: `rules/`
-- Validation corpus and expected outcomes: `validation/corpus/`
-- Launch-readiness notes and reviewer journeys: `docs/launch-readiness.md`
