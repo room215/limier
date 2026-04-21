@@ -13,11 +13,11 @@ hero:
       text: Get Started
       link: /guide/getting-started
     - theme: alt
+      text: Use In CI
+      link: /guide/ci-and-deploy
+    - theme: alt
       text: Review Your Project
       link: /guide/review-your-own-project
-    - theme: alt
-      text: CLI Reference
-      link: /reference/cli
 
 features:
   - title: Compare the same workflow twice
@@ -60,6 +60,7 @@ The current adapters are:
 ## Start Here
 
 - [Getting Started](/guide/getting-started) if you want a first successful run as quickly as possible.
+- [Use In CI](/guide/ci-and-deploy) if you want the recommended GitHub and CI workflow shape.
 - [Review Your Own Project](/guide/review-your-own-project) if you already know which dependency and fixture you want to test.
 - [Understand Results](/guide/understand-results) if you have a report and want to know what to do with it.
 - [Use With Codex](/guide/use-with-codex) if you want to package repository knowledge as a Codex skill or plugin.
