@@ -73,7 +73,9 @@ jobs:
 That read-only review job is a good default. If it uses `dependabot/fetch-metadata`, remember that once a GitHub Actions `permissions` block is present, omitted scopes default to `none`, so `pull-requests: read` must be declared explicitly. Also remember that `pull_request` runs from forks and Dependabot PRs get a read-only `GITHUB_TOKEN`, so comment, label, merge, or other write-back actions should happen in a separate privileged follow-up workflow such as `workflow_run`.
 
 ::: warning Avoid `pull_request_target` for the review run
-The safest default is to run Limier in the unprivileged `pull_request` context and keep commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if you need it.
+The safest default is to run Limier in the `pull_request` context with a read-only `GITHUB_TOKEN` and keep commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if you need it.
+
+That is unprivileged in the GitHub API sense only. Limier still needs Docker daemon access to run fixtures, so this workflow should run on GitHub-hosted runners or dedicated isolated self-hosted runners rather than on broadly shared infrastructure.
 :::
 
 ## Hosted Runners vs Self-Hosted Runners
@@ -96,6 +98,8 @@ ghcr.io/room215/limier:<version>
 ```
 
 When you run Limier from the container against a host Docker daemon, mount your repository at the same absolute path inside the container that it has on the host. That keeps fixture paths valid when Limier asks Docker to bind-mount them again.
+
+Mounting `/var/run/docker.sock` gives the Limier container control over the host Docker daemon so it can create the review containers. Treat that as runner-level container control, not as a sandbox for untrusted pull request code.
 
 ```sh
 docker run --rm \

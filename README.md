@@ -49,7 +49,9 @@ For a GitHub-based setup, the repository should add:
 
 If you use `dependabot/fetch-metadata`, grant the job `pull-requests: read`. For a minimal working example and the full CI guidance, see `docs/guide/ci-and-deploy.md` and `examples/ci/README.md`.
 
-The safest default is to run Limier in the unprivileged `pull_request` context and keep any commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if needed. Avoid checking out and running pull request code from `pull_request_target`.
+The safest default is to run Limier in the `pull_request` context with a read-only `GITHUB_TOKEN` and keep any commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if needed. Avoid checking out and running pull request code from `pull_request_target`.
+
+That setup is unprivileged in the GitHub permissions sense only. Limier still needs Docker daemon access to create fixture containers, so it is not a sandbox boundary for untrusted pull request code. Prefer GitHub-hosted runners or dedicated isolated self-hosted runners for review jobs.
 
 For GitHub-hosted runners, assume Docker is available but full host-signal capture is not. A stock hosted runner should therefore use a CI-specific scenario with `capture_host_signals: false`, or you should run Limier on a self-hosted Linux runner with `bpftrace` installed when full host telemetry is required.
 
@@ -68,6 +70,8 @@ The image is intentionally minimal:
 - no package manager or shell in the final image
 
 When running Limier from the container against a host Docker daemon, mount your repository at the same absolute path inside the container that it has on the host. This keeps Limier's fixture paths valid when the inner Docker daemon bind-mounts them. The example below also runs as your local UID/GID so it can write `out/limier/report.json`, `out/limier/summary.md`, and `out/limier/evidence/` back into the host checkout.
+
+Mounting `/var/run/docker.sock` gives the Limier container control over the host Docker daemon so it can start the fixture containers. Treat that access as runner-level container control rather than a hard sandbox. Use this pattern only on a trusted local machine or an ephemeral or isolated CI runner.
 
 ```sh
 docker run --rm \
@@ -153,10 +157,3 @@ Use that when you want an AI agent to understand Limier's intended workflows in 
 If you want marketplace packaging or extra integrations, treat a Codex plugin as a later packaging step around the skill rather than a replacement for the CLI itself.
 
 See `docs/guide/use-with-codex.md` for the current recommendation and layout.
-
-## Phase 7 Assets
-
-- Sample fixture and scenario: `fixtures/` and `scenarios/`
-- Default and sample-specific rules: `rules/`
-- Validation corpus and expected outcomes: `validation/corpus/`
-- Launch-readiness notes and reviewer journeys: `docs/launch-readiness.md`

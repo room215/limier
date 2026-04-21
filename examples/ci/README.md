@@ -50,4 +50,6 @@ jobs:
 
 If that job uses `dependabot/fetch-metadata`, `pull-requests: read` is required. Once a GitHub Actions `permissions` block is present, any omitted scopes default to `none`.
 
+That `pull_request` pattern is unprivileged in the GitHub permissions sense only. Limier still needs Docker daemon access to run fixtures, so treat the review job as having runner-level container control and prefer GitHub-hosted runners or dedicated isolated self-hosted runners.
+
 If you want Limier to post comments, add labels, or enable auto-merge, keep that behavior in a separate privileged follow-up workflow rather than running pull request code from `pull_request_target`.
