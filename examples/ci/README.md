@@ -24,7 +24,7 @@ Docker is still required at runtime because Limier executes fixtures in containe
 
 ## Dependabot Usage
 
-The files in this directory are sample wrappers around the repository-owned demo assets. They are useful for proving out the CI contract, but they are not a drop-in Dependabot integration.
+The files in this directory are sample wrappers around the repository-owned demo assets. They are useful for proving out the CI contract, but they are not a drop-in Dependabot integration. You still need to add Dependabot-specific triggers, metadata wiring, and permissions in your own repository workflow.
 
 For a real Dependabot workflow, the repository should usually add:
 
@@ -33,7 +33,7 @@ For a real Dependabot workflow, the repository should usually add:
 3. A metadata step such as `dependabot/fetch-metadata` so the workflow can pass the dependency name, ecosystem, previous version, and new version into `limier run`.
 4. A CI-specific scenario when running on GitHub-hosted runners, because hosted runners should not be assumed to have `bpftrace` available.
 
-A minimal Dependabot gate looks like this:
+A minimal Dependabot gate and permission set looks like this:
 
 ```yaml
 on:
@@ -43,6 +43,11 @@ on:
 jobs:
   limier:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      contents: read
+      pull-requests: read
 ```
+
+If that job uses `dependabot/fetch-metadata`, `pull-requests: read` is required. Once a GitHub Actions `permissions` block is present, any omitted scopes default to `none`.
 
 If you want Limier to post comments, add labels, or enable auto-merge, keep that behavior in a separate privileged follow-up workflow rather than running pull request code from `pull_request_target`.

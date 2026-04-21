@@ -47,11 +47,13 @@ For a GitHub-based setup, the repository should add:
 - a Dependabot-only gate such as `if: github.event.pull_request.user.login == 'dependabot[bot]'`
 - a metadata step such as `dependabot/fetch-metadata` to map the pull request to `--ecosystem`, `--package`, `--current`, and `--candidate`
 
+If you use `dependabot/fetch-metadata`, grant the job `pull-requests: read`. For a minimal working example and the full CI guidance, see `docs/guide/ci-and-deploy.md` and `examples/ci/README.md`.
+
 The safest default is to run Limier in the unprivileged `pull_request` context and keep any commenting, labeling, or auto-merge behavior in a separate privileged follow-up workflow if needed. Avoid checking out and running pull request code from `pull_request_target`.
 
 For GitHub-hosted runners, assume Docker is available but full host-signal capture is not. A stock hosted runner should therefore use a CI-specific scenario with `capture_host_signals: false`, or you should run Limier on a self-hosted Linux runner with `bpftrace` installed when full host telemetry is required.
 
-The sample runner in `examples/ci/run-sample.sh` is intentionally hardcoded to a repository-owned demo dependency upgrade. It is a runnable example, not the Dependabot glue layer.
+The sample runner in `examples/ci/run-sample.sh` and the sample workflow in `examples/ci/github-actions.yml` are intentionally hardcoded to a repository-owned demo dependency upgrade. They are runnable examples, not a drop-in Dependabot glue layer.
 
 ## Container Image
 
