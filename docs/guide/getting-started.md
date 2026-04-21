@@ -101,6 +101,8 @@ limier render \
 
 From the repository checkout, mount the checkout at the same absolute path inside the container:
 
+Mounting `/var/run/docker.sock` gives the Limier container control over the host Docker daemon so it can create the fixture containers. Use this only on a trusted local machine or an ephemeral or isolated CI runner.
+
 ```sh
 mkdir -p out/limier
 
