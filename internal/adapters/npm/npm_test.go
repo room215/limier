@@ -54,6 +54,42 @@ func TestUpdateDependencyVersionAddsMissingDependency(t *testing.T) {
 	}
 }
 
+func TestUpdateDependencyVersionCreatesDependenciesSection(t *testing.T) {
+	t.Parallel()
+
+	path := writePackageManifest(t, map[string]any{
+		"name": "demo",
+	})
+
+	if err := updateDependencyVersion(path, "left-pad", "1.3.0"); err != nil {
+		t.Fatalf("updateDependencyVersion() error = %v", err)
+	}
+
+	manifest := readPackageManifest(t, path)
+	dependencies := manifest["dependencies"].(map[string]any)
+
+	if got := dependencies["left-pad"].(string); got != "1.3.0" {
+		t.Fatalf("left-pad version = %q, want %q", got, "1.3.0")
+	}
+}
+
+func TestUpdateDependencyVersionRejectsUnsupportedDependenciesShape(t *testing.T) {
+	t.Parallel()
+
+	path := writePackageManifest(t, map[string]any{
+		"name":         "demo",
+		"dependencies": []any{"left-pad"},
+	})
+
+	err := updateDependencyVersion(path, "left-pad", "1.3.0")
+	if err == nil {
+		t.Fatal("updateDependencyVersion() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "unsupported npm dependency shape") {
+		t.Fatalf("updateDependencyVersion() error = %q, want unsupported shape error", err)
+	}
+}
+
 func TestUpdateDependencyVersionRejectsSourceBackedSpecs(t *testing.T) {
 	t.Parallel()
 

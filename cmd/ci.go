@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +29,7 @@ type githubCIOptions struct {
 	rulesPath        string
 	metadataOutcome  string
 	prAuthor         string
+	getenv           func(string) string
 }
 
 type dependencyUpgrade struct {
@@ -102,8 +104,8 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 		}
 	}
 
-	prNumber := githubPullRequestNumber()
-	prAuthor := firstNonEmpty(options.prAuthor, githubPullRequestAuthor())
+	prNumber := githubPullRequestNumber(options.getEnv)
+	prAuthor := firstNonEmpty(options.prAuthor, githubPullRequestAuthor(options.getEnv))
 	upgrade, status, ok := resolveDependencyUpgrade(options, prNumber, prAuthor)
 	if !ok {
 		return finishSkippedCIStatus(status, paths, options.failOn)
@@ -125,6 +127,10 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 
 	runReport, err := executeRun(ctx, runOptions)
 	if err != nil {
+		finishErr := finishCIStatus(ciErrorStatus(err, paths, prNumber, upgrade), paths)
+		if finishErr != nil {
+			err = errors.Join(err, finishErr)
+		}
 		return &exitError{
 			code: 2,
 			err:  err,
@@ -132,6 +138,10 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 	}
 
 	if err := writeRenderedCIOutputs(runReport, paths); err != nil {
+		finishErr := finishCIStatus(ciErrorStatus(err, paths, prNumber, upgrade), paths)
+		if finishErr != nil {
+			err = errors.Join(err, finishErr)
+		}
 		return &exitError{
 			code: 2,
 			err:  err,
@@ -140,6 +150,26 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 
 	exitCode, err := policyExitCode(runReport.OperatorRecommendation, runReport.ExitCode, options.failOn)
 	if err != nil {
+		status = ciStatus{
+			Status:                 "ran",
+			OperatorRecommendation: string(runReport.OperatorRecommendation),
+			Message:                err.Error(),
+			PRNumber:               prNumber,
+			Ecosystem:              upgrade.Ecosystem,
+			Package:                upgrade.Package,
+			CurrentVersion:         upgrade.CurrentVersion,
+			CandidateVersion:       upgrade.CandidateVersion,
+			ReportPath:             paths.reportPath,
+			SummaryPath:            paths.summaryPath,
+			BuildSummaryPath:       paths.buildSummaryPath,
+			CommentPath:            paths.commentPath,
+			StatusPath:             paths.statusPath,
+			PolicyExitCode:         2,
+		}
+		finishErr := finishCIStatus(status, paths)
+		if finishErr != nil {
+			err = errors.Join(err, finishErr)
+		}
 		return &exitError{
 			code: 2,
 			err:  err,
@@ -169,6 +199,32 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 		return nil
 	}
 	return &exitError{code: exitCode}
+}
+
+func (options githubCIOptions) getEnv(name string) string {
+	if options.getenv != nil {
+		return options.getenv(name)
+	}
+	return os.Getenv(name)
+}
+
+func ciErrorStatus(err error, paths ciPaths, prNumber int, upgrade dependencyUpgrade) ciStatus {
+	return ciStatus{
+		Status:                 "rerun",
+		OperatorRecommendation: string(verdict.RecommendationRerun),
+		Message:                fmt.Sprintf("Limier CI did not complete: %v", err),
+		PRNumber:               prNumber,
+		Ecosystem:              upgrade.Ecosystem,
+		Package:                upgrade.Package,
+		CurrentVersion:         upgrade.CurrentVersion,
+		CandidateVersion:       upgrade.CandidateVersion,
+		ReportPath:             paths.reportPath,
+		SummaryPath:            paths.summaryPath,
+		BuildSummaryPath:       paths.buildSummaryPath,
+		CommentPath:            paths.commentPath,
+		StatusPath:             paths.statusPath,
+		PolicyExitCode:         2,
+	}
 }
 
 func finishSkippedCIStatus(status ciStatus, paths ciPaths, failOn string) error {
@@ -214,26 +270,26 @@ func ciOutputPaths(outputDir string) ciPaths {
 func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor string) (dependencyUpgrade, ciStatus, bool) {
 	rawEcosystem := firstNonEmpty(
 		options.ecosystem,
-		os.Getenv("LIMIER_CI_ECOSYSTEM"),
-		os.Getenv("DEPENDABOT_PACKAGE_ECOSYSTEM"),
+		options.getEnv("LIMIER_CI_ECOSYSTEM"),
+		options.getEnv("DEPENDABOT_PACKAGE_ECOSYSTEM"),
 	)
 	rawPackage := firstNonEmpty(
 		options.packageName,
-		os.Getenv("LIMIER_CI_PACKAGE"),
-		os.Getenv("LIMIER_CI_DEPENDENCY_NAMES"),
-		os.Getenv("DEPENDABOT_DEPENDENCY_NAMES"),
+		options.getEnv("LIMIER_CI_PACKAGE"),
+		options.getEnv("LIMIER_CI_DEPENDENCY_NAMES"),
+		options.getEnv("DEPENDABOT_DEPENDENCY_NAMES"),
 	)
 	current := firstNonEmpty(
 		options.currentVersion,
-		os.Getenv("LIMIER_CI_CURRENT"),
-		os.Getenv("LIMIER_CI_PREVIOUS_VERSION"),
-		os.Getenv("DEPENDABOT_PREVIOUS_VERSION"),
+		options.getEnv("LIMIER_CI_CURRENT"),
+		options.getEnv("LIMIER_CI_PREVIOUS_VERSION"),
+		options.getEnv("DEPENDABOT_PREVIOUS_VERSION"),
 	)
 	candidate := firstNonEmpty(
 		options.candidateVersion,
-		os.Getenv("LIMIER_CI_CANDIDATE"),
-		os.Getenv("LIMIER_CI_NEW_VERSION"),
-		os.Getenv("DEPENDABOT_NEW_VERSION"),
+		options.getEnv("LIMIER_CI_CANDIDATE"),
+		options.getEnv("LIMIER_CI_NEW_VERSION"),
+		options.getEnv("DEPENDABOT_NEW_VERSION"),
 	)
 
 	if metadataLookupFailed(options, prAuthor) && (rawEcosystem == "" || rawPackage == "" || current == "" || candidate == "") {
@@ -270,7 +326,7 @@ func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor st
 }
 
 func metadataLookupFailed(options githubCIOptions, prAuthor string) bool {
-	outcome := strings.ToLower(firstNonEmpty(options.metadataOutcome, os.Getenv("DEPENDABOT_METADATA_OUTCOME")))
+	outcome := strings.ToLower(firstNonEmpty(options.metadataOutcome, options.getEnv("DEPENDABOT_METADATA_OUTCOME")))
 	if outcome == "" || outcome == "success" {
 		return false
 	}
@@ -423,16 +479,16 @@ func writeGitHubStepOutputs(status ciStatus) error {
 	return err
 }
 
-func githubPullRequestNumber() int {
-	event := readGitHubPullRequestEvent()
+func githubPullRequestNumber(getenv func(string) string) int {
+	event := readGitHubPullRequestEvent(getenv)
 	if event.PullRequest.Number != 0 {
 		return event.PullRequest.Number
 	}
 	return event.Number
 }
 
-func githubPullRequestAuthor() string {
-	event := readGitHubPullRequestEvent()
+func githubPullRequestAuthor(getenv func(string) string) string {
+	event := readGitHubPullRequestEvent(getenv)
 	return event.PullRequest.User.Login
 }
 
@@ -446,8 +502,12 @@ type githubPullRequestEvent struct {
 	} `json:"pull_request"`
 }
 
-func readGitHubPullRequestEvent() githubPullRequestEvent {
-	eventPath := strings.TrimSpace(os.Getenv("GITHUB_EVENT_PATH"))
+func readGitHubPullRequestEvent(getenv func(string) string) githubPullRequestEvent {
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+
+	eventPath := strings.TrimSpace(getenv("GITHUB_EVENT_PATH"))
 	if eventPath == "" {
 		return githubPullRequestEvent{}
 	}

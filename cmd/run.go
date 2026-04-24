@@ -221,6 +221,7 @@ func recommendationListed(recommendation verdict.Recommendation, value string) (
 		string(verdict.RecommendationRerun):       verdict.RecommendationRerun,
 	}
 
+	listed := false
 	for _, part := range strings.Split(value, ",") {
 		name := strings.ToLower(strings.TrimSpace(part))
 		if name == "" {
@@ -230,9 +231,9 @@ func recommendationListed(recommendation verdict.Recommendation, value string) (
 			return false, fmt.Errorf("unsupported --fail-on recommendation %q", name)
 		}
 		if verdict.Recommendation(name) == recommendation {
-			return true, nil
+			listed = true
 		}
 	}
 
-	return false, nil
+	return listed, nil
 }

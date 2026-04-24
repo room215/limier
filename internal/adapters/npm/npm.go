@@ -148,7 +148,7 @@ func updateDependencyVersion(manifestPath string, dependency string, version str
 			return err
 		}
 		deps[dependency] = version
-		sections = append(sections, "dependencies")
+		return writeManifest(manifestPath, manifest)
 	}
 
 	for _, section := range sections {
@@ -161,6 +161,10 @@ func updateDependencyVersion(manifestPath string, dependency string, version str
 		deps[dependency] = version
 	}
 
+	return writeManifest(manifestPath, manifest)
+}
+
+func writeManifest(manifestPath string, manifest map[string]any) error {
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode manifest %q: %w", manifestPath, err)

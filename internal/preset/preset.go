@@ -11,7 +11,7 @@ import (
 
 const prefix = "preset:"
 
-//go:embed assets/**
+//go:embed assets
 var assets embed.FS
 
 type Cleanup func()

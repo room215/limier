@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/room215/limier/internal/verdict"
@@ -41,6 +42,33 @@ func TestPolicyExitCodeFailsListedRecommendation(t *testing.T) {
 	}
 	if exitCode != 1 {
 		t.Fatalf("exitCode = %d, want 1", exitCode)
+	}
+}
+
+func TestPolicyExitCodeFailsRerunWithInfrastructureExitCode(t *testing.T) {
+	t.Parallel()
+
+	exitCode, err := policyExitCode(verdict.RecommendationRerun, 0, "block,rerun")
+	if err != nil {
+		t.Fatalf("policyExitCode() error = %v", err)
+	}
+	if exitCode != 2 {
+		t.Fatalf("exitCode = %d, want 2", exitCode)
+	}
+}
+
+func TestPolicyExitCodeRejectsUnknownFailOnRecommendation(t *testing.T) {
+	t.Parallel()
+
+	exitCode, err := policyExitCode(verdict.RecommendationBlock, 1, "block,unknown")
+	if err == nil {
+		t.Fatal("policyExitCode() error = nil, want error")
+	}
+	if exitCode != 2 {
+		t.Fatalf("exitCode = %d, want 2", exitCode)
+	}
+	if !strings.Contains(err.Error(), "unsupported --fail-on recommendation") {
+		t.Fatalf("policyExitCode() error = %q, want unsupported recommendation", err)
 	}
 }
 

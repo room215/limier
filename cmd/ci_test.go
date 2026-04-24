@@ -16,6 +16,7 @@ func TestRunGitHubCIWritesNotApplicableStatusWithoutMetadata(t *testing.T) {
 	if err := runGitHubCI(t.Context(), githubCIOptions{
 		outputDir: outputDir,
 		failOn:    "block,rerun",
+		getenv:    emptyCIEnv,
 	}); err != nil {
 		t.Fatalf("runGitHubCI() error = %v", err)
 	}
@@ -48,6 +49,7 @@ func TestRunGitHubCIFailOnNeedsReviewFailsGroupedUpdate(t *testing.T) {
 		packageName:      "a,b",
 		currentVersion:   "1.0.0",
 		candidateVersion: "1.1.0",
+		getenv:           emptyCIEnv,
 	})
 	if err == nil {
 		t.Fatal("runGitHubCI() error = nil, want exit error")
@@ -78,6 +80,7 @@ func TestRunGitHubCIFailsClosedWhenDependabotMetadataFails(t *testing.T) {
 		failOn:          "block,rerun",
 		metadataOutcome: "failure",
 		prAuthor:        "dependabot[bot]",
+		getenv:          emptyCIEnv,
 	})
 	if err == nil {
 		t.Fatal("runGitHubCI() error = nil, want exit error")
@@ -100,6 +103,50 @@ func TestRunGitHubCIFailsClosedWhenDependabotMetadataFails(t *testing.T) {
 	if status.OperatorRecommendation != "rerun" {
 		t.Fatalf("status.OperatorRecommendation = %q, want rerun", status.OperatorRecommendation)
 	}
+}
+
+func TestRunGitHubCIWritesStatusWhenRunFails(t *testing.T) {
+	t.Parallel()
+
+	outputDir := filepath.Join(t.TempDir(), "limier")
+	err := runGitHubCI(t.Context(), githubCIOptions{
+		outputDir:        outputDir,
+		failOn:           "block,rerun",
+		ecosystem:        "npm",
+		packageName:      "left-pad",
+		currentVersion:   "1.1.0",
+		candidateVersion: "1.3.0",
+		rulesPath:        "preset:missing",
+		getenv:           emptyCIEnv,
+	})
+	if err == nil {
+		t.Fatal("runGitHubCI() error = nil, want exit error")
+	}
+
+	var exitErr interface {
+		ExitCode() int
+	}
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("runGitHubCI() error = %T, want exit error", err)
+	}
+	if exitErr.ExitCode() != 2 {
+		t.Fatalf("ExitCode() = %d, want 2", exitErr.ExitCode())
+	}
+
+	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
+	if status.Status != "rerun" {
+		t.Fatalf("status.Status = %q, want rerun", status.Status)
+	}
+	if status.OperatorRecommendation != "rerun" {
+		t.Fatalf("status.OperatorRecommendation = %q, want rerun", status.OperatorRecommendation)
+	}
+	if !strings.Contains(status.Message, "unsupported rules preset") {
+		t.Fatalf("status.Message = %q, want unsupported rules preset", status.Message)
+	}
+}
+
+func emptyCIEnv(string) string {
+	return ""
 }
 
 func readCIStatus(t *testing.T, path string) ciStatus {
