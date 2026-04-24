@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/room215/limier/internal/limier"
+	"github.com/room215/limier/internal/preset"
 	"github.com/room215/limier/internal/report"
+	"github.com/room215/limier/internal/verdict"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +25,7 @@ type runOptions struct {
 	reportPath       string
 	summaryPath      string
 	evidencePath     string
+	failOn           string
 }
 
 type exitError struct {
@@ -72,36 +75,68 @@ func newRunCommand() *cobra.Command {
 	cmd.Flags().StringVar(&options.reportPath, "report", options.reportPath, "Path to write report.json")
 	cmd.Flags().StringVar(&options.summaryPath, "summary", options.summaryPath, "Path to write summary.md")
 	cmd.Flags().StringVar(&options.evidencePath, "evidence", options.evidencePath, "Path to write evidence files")
+	cmd.Flags().StringVar(&options.failOn, "fail-on", "", "Comma-separated recommendations that should fail this command; empty preserves Limier defaults")
 
 	_ = cmd.MarkFlagRequired("ecosystem")
 	_ = cmd.MarkFlagRequired("package")
 	_ = cmd.MarkFlagRequired("current")
 	_ = cmd.MarkFlagRequired("candidate")
-	_ = cmd.MarkFlagRequired("fixture")
-	_ = cmd.MarkFlagRequired("scenario")
-	_ = cmd.MarkFlagRequired("rules")
 
 	return cmd
 }
 
 func runLimier(ctx context.Context, options runOptions) error {
+	runReport, err := executeRun(ctx, options)
+	if err != nil {
+		return &exitError{
+			code: 2,
+			err:  err,
+		}
+	}
+
+	exitCode, err := policyExitCode(runReport.OperatorRecommendation, runReport.ExitCode, options.failOn)
+	if err != nil {
+		return &exitError{
+			code: 2,
+			err:  err,
+		}
+	}
+
+	if exitCode == 0 {
+		return nil
+	}
+
+	if exitCode == 2 && runReport.Diagnostic != nil && strings.TrimSpace(runReport.Diagnostic.Summary) != "" {
+		return &exitError{
+			code: exitCode,
+			err:  errors.New(runReport.Diagnostic.Summary),
+		}
+	}
+
+	return &exitError{code: exitCode}
+}
+
+func executeRun(ctx context.Context, options runOptions) (report.Report, error) {
+	resolved, cleanup, err := resolveRunPresets(options)
+	if err != nil {
+		return report.Report{}, err
+	}
+	defer cleanup()
+
 	result := limier.Run(ctx, limier.Options{
 		LimierVersion:    version,
-		Ecosystem:        strings.TrimSpace(options.ecosystem),
-		PackageName:      strings.TrimSpace(options.packageName),
-		CurrentVersion:   strings.TrimSpace(options.currentVersion),
-		CandidateVersion: strings.TrimSpace(options.candidateVersion),
-		FixturePath:      strings.TrimSpace(options.fixturePath),
-		ScenarioPath:     strings.TrimSpace(options.scenarioPath),
-		RulesPath:        strings.TrimSpace(options.rulesPath),
-		EvidencePath:     strings.TrimSpace(options.evidencePath),
+		Ecosystem:        strings.TrimSpace(resolved.ecosystem),
+		PackageName:      strings.TrimSpace(resolved.packageName),
+		CurrentVersion:   strings.TrimSpace(resolved.currentVersion),
+		CandidateVersion: strings.TrimSpace(resolved.candidateVersion),
+		FixturePath:      strings.TrimSpace(resolved.fixturePath),
+		ScenarioPath:     strings.TrimSpace(resolved.scenarioPath),
+		RulesPath:        strings.TrimSpace(resolved.rulesPath),
+		EvidencePath:     strings.TrimSpace(resolved.evidencePath),
 	})
 
 	if err := report.WriteAll(options.reportPath, options.summaryPath, result.Report); err != nil {
-		return &exitError{
-			code: 2,
-			err:  fmt.Errorf("write outputs: %w", err),
-		}
+		return report.Report{}, fmt.Errorf("write outputs: %w", err)
 	}
 
 	slog.Info(
@@ -116,16 +151,88 @@ func runLimier(ctx context.Context, options runOptions) error {
 		"evidence_path", result.Report.Evidence.RootPath,
 	)
 
-	if result.Report.ExitCode == 0 {
-		return nil
-	}
+	return result.Report, nil
+}
 
-	if result.Report.ExitCode == 2 && result.Report.Diagnostic != nil && strings.TrimSpace(result.Report.Diagnostic.Summary) != "" {
-		return &exitError{
-			code: result.Report.ExitCode,
-			err:  errors.New(result.Report.Diagnostic.Summary),
+func resolveRunPresets(options runOptions) (runOptions, func(), error) {
+	var cleanups []preset.Cleanup
+	cleanup := func() {
+		for i := len(cleanups) - 1; i >= 0; i-- {
+			if cleanups[i] != nil {
+				cleanups[i]()
+			}
 		}
 	}
 
-	return &exitError{code: result.Report.ExitCode}
+	resolved := options
+	var err error
+	var cleanupOne preset.Cleanup
+
+	resolved.rulesPath, cleanupOne, err = preset.ResolveRules(options.rulesPath)
+	if err != nil {
+		cleanup()
+		return runOptions{}, nil, err
+	}
+	cleanups = append(cleanups, cleanupOne)
+
+	resolved.scenarioPath, cleanupOne, err = preset.ResolveScenario(options.scenarioPath, options.ecosystem)
+	if err != nil {
+		cleanup()
+		return runOptions{}, nil, err
+	}
+	cleanups = append(cleanups, cleanupOne)
+
+	resolved.fixturePath, cleanupOne, err = preset.ResolveFixture(options.fixturePath, options.ecosystem)
+	if err != nil {
+		cleanup()
+		return runOptions{}, nil, err
+	}
+	cleanups = append(cleanups, cleanupOne)
+
+	return resolved, cleanup, nil
+}
+
+func policyExitCode(recommendation verdict.Recommendation, defaultExitCode int, failOn string) (int, error) {
+	trimmed := strings.TrimSpace(failOn)
+	if trimmed == "" {
+		return defaultExitCode, nil
+	}
+
+	shouldFail, err := recommendationListed(recommendation, trimmed)
+	if err != nil {
+		return 2, err
+	}
+	if !shouldFail {
+		return 0, nil
+	}
+
+	if recommendation == verdict.RecommendationRerun {
+		return 2, nil
+	}
+
+	return 1, nil
+}
+
+func recommendationListed(recommendation verdict.Recommendation, value string) (bool, error) {
+	valid := map[string]verdict.Recommendation{
+		string(verdict.RecommendationGoodToGo):    verdict.RecommendationGoodToGo,
+		string(verdict.RecommendationNeedsReview): verdict.RecommendationNeedsReview,
+		string(verdict.RecommendationBlock):       verdict.RecommendationBlock,
+		string(verdict.RecommendationRerun):       verdict.RecommendationRerun,
+	}
+
+	for _, part := range strings.Split(value, ",") {
+		name := strings.ToLower(strings.TrimSpace(part))
+		if name == "" {
+			continue
+		}
+		if _, ok := valid[name]; !ok {
+			return false, fmt.Errorf("unsupported --fail-on recommendation %q", name)
+		}
+		if verdict.Recommendation(name) == recommendation {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

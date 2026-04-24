@@ -143,13 +143,20 @@ func updateDependencyVersion(manifestPath string, dependency string, version str
 
 	sections := dependencySections(manifest, dependency)
 	if len(sections) == 0 {
-		return fmt.Errorf("dependency %q is not declared in dependencies or devDependencies", dependency)
+		deps, err := ensureStringMap(manifest, "dependencies")
+		if err != nil {
+			return err
+		}
+		deps[dependency] = version
+		sections = append(sections, "dependencies")
 	}
 
 	for _, section := range sections {
 		deps := manifest[section].(map[string]any)
-		if err := validateSupportedDependencySpec(deps[dependency], dependency); err != nil {
-			return err
+		if current, ok := deps[dependency]; ok {
+			if err := validateSupportedDependencySpec(current, dependency); err != nil {
+				return err
+			}
 		}
 		deps[dependency] = version
 	}
@@ -165,6 +172,22 @@ func updateDependencyVersion(manifestPath string, dependency string, version str
 	}
 
 	return nil
+}
+
+func ensureStringMap(manifest map[string]any, section string) (map[string]any, error) {
+	raw, ok := manifest[section]
+	if !ok {
+		deps := map[string]any{}
+		manifest[section] = deps
+		return deps, nil
+	}
+
+	deps, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("%q in %q uses unsupported npm dependency shape", section, manifestName)
+	}
+
+	return deps, nil
 }
 
 func validateSupportedDependencySpec(rawValue any, dependency string) error {

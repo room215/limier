@@ -34,6 +34,26 @@ func TestUpdateDependencyVersionRewritesRegistrySpecAndPreservesUnrelatedDeps(t 
 	}
 }
 
+func TestUpdateDependencyVersionAddsMissingDependency(t *testing.T) {
+	t.Parallel()
+
+	path := writePackageManifest(t, map[string]any{
+		"name":         "demo",
+		"dependencies": map[string]any{},
+	})
+
+	if err := updateDependencyVersion(path, "@scope/new-package", "2.0.0"); err != nil {
+		t.Fatalf("updateDependencyVersion() error = %v", err)
+	}
+
+	manifest := readPackageManifest(t, path)
+	dependencies := manifest["dependencies"].(map[string]any)
+
+	if got := dependencies["@scope/new-package"].(string); got != "2.0.0" {
+		t.Fatalf("@scope/new-package version = %q, want %q", got, "2.0.0")
+	}
+}
+
 func TestUpdateDependencyVersionRejectsSourceBackedSpecs(t *testing.T) {
 	t.Parallel()
 

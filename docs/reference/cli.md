@@ -1,8 +1,9 @@
 # CLI Reference
 
-Limier exposes four top-level commands:
+Limier exposes five top-level commands:
 
 - `limier run`
+- `limier ci github`
 - `limier inspect`
 - `limier render`
 - `limier version`
@@ -17,9 +18,6 @@ limier run \
   --package left-pad \
   --current 1.0.0 \
   --candidate 1.1.0 \
-  --fixture fixtures/npm-app \
-  --scenario scenarios/npm.yml \
-  --rules rules/default.yml \
   --report out/limier/report.json \
   --summary out/limier/summary.md \
   --evidence out/limier/evidence
@@ -31,18 +29,45 @@ Flags:
 - `--package`: dependency name to compare
 - `--current`: baseline version
 - `--candidate`: candidate version
-- `--fixture`: path to the sample application directory
-- `--scenario`: path to the scenario manifest
-- `--rules`: path to the rules file
+- `--fixture`: path to the sample application directory, or a preset. Defaults to `preset:npm-require` for npm.
+- `--scenario`: path to the scenario manifest, or a preset. Defaults to `preset:npm-ci` for npm.
+- `--rules`: path to the rules file, or a preset. Defaults to `preset:default`.
 - `--report`: path for the JSON report, default `report.json`
 - `--summary`: path for the Markdown summary, default `summary.md`
 - `--evidence`: directory for evidence files, default `evidence`
+- `--fail-on`: optional comma-separated recommendations that should fail the command. Empty preserves Limier's default exit-code behavior.
 
 Supported ecosystems today:
 
 - `cargo`
 - `npm`
 - `pip`
+
+## `limier ci github`
+
+Use this in GitHub Actions wrappers. It reads Dependabot metadata from environment variables, applies CI defaults, writes rendered outputs, and exits according to `--fail-on`.
+
+```sh
+limier ci github \
+  --output-dir out/limier \
+  --fail-on block,rerun
+```
+
+The command writes:
+
+- `out/limier/report.json` when Limier runs
+- `out/limier/summary.md`
+- `out/limier/build-summary.md`
+- `out/limier/comment.md`
+- `out/limier/status.json`
+- `out/limier/pr.txt` when a pull request number is available
+
+Flags:
+
+- `--output-dir`: directory for CI outputs, default `out/limier`
+- `--fail-on`: comma-separated recommendations that should fail the command, default `block,rerun`
+- `--ecosystem`, `--package`, `--current`, `--candidate`: optional metadata overrides
+- `--fixture`, `--scenario`, `--rules`: optional path or preset overrides
 
 ## `limier inspect`
 

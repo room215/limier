@@ -65,7 +65,6 @@ func TestAdaptersConformToSharedContract(t *testing.T) {
 				"manifest_path":          "package.json",
 				"installed_version_kind": "package_manifest",
 			},
-			missingDependencyErr: `dependency "left-pad" is not declared`,
 			writeFixture: func(t *testing.T, workspace string) {
 				t.Helper()
 
@@ -315,6 +314,12 @@ rand = "0.8.5"
 			}
 
 			_, err = tc.adapter.PrepareWorkspace(context.Background(), missingWorkspace, tc.spec)
+			if tc.missingDependencyErr == "" {
+				if err != nil {
+					t.Fatalf("PrepareWorkspace() error = %v, want nil", err)
+				}
+				return
+			}
 			if err == nil {
 				t.Fatal("PrepareWorkspace() error = nil, want missing dependency error")
 			}

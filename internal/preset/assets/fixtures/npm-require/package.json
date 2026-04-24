@@ -1,0 +1,7 @@
+{
+  "name": "limier-npm-generic-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Generic Limier npm dependency review fixture.",
+  "dependencies": {}
+}
