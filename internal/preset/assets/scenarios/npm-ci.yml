@@ -1,0 +1,16 @@
+version: 1
+name: npm generic dependency review
+repeats: 2
+workdir: /workspace
+network:
+  mode: default
+evidence:
+  capture_host_signals: false
+success:
+  exit_code: 0
+steps:
+  - name: install dependency
+    run: install
+  - name: exercise package
+    run: exercise
+    command: node index.js
