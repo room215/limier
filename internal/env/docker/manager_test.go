@@ -192,7 +192,7 @@ func TestExecuteStepReturnsCollectorEventsWhenFinishFails(t *testing.T) {
 
 	binary := writeFakeDocker(t,
 		`case "$1" in`,
-		`  exec) /bin/sh -lc "$5"; exit $? ;;`,
+		`  exec) [ "$4" = "-c" ] || { printf "shell flag = %s, want -c\n" "$4" >&2; exit 99; }; /bin/sh -c "$5"; exit $? ;;`,
 		`  *) exit 0 ;;`,
 		`esac`,
 	)

@@ -20,7 +20,7 @@ func TestManagerRunUsesStepScopedCollectorEvents(t *testing.T) {
 		`case "$1" in`,
 		`  create|start|rm) exit 0 ;;`,
 		`  inspect) printf "%d\n" `+strconv.Itoa(testPID)+`; exit 0 ;;`,
-		`  exec) /bin/sh -lc "$5"; exit $? ;;`,
+		`  exec) [ "$4" = "-c" ] || { printf "shell flag = %s, want -c\n" "$4" >&2; exit 99; }; /bin/sh -c "$5"; exit $? ;;`,
 		`  *) exit 1 ;;`,
 		`esac`,
 	)

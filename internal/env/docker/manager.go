@@ -213,7 +213,7 @@ func (m Manager) createContainer(ctx context.Context, name string, request RunRe
 		args = append(args, "--network", "none")
 	}
 
-	args = append(args, request.Image, "sh", "-lc", `trap "exit 0" TERM INT; while true; do sleep 3600; done`)
+	args = append(args, request.Image, "sh", "-c", `trap "exit 0" TERM INT; while true; do sleep 3600; done`)
 
 	_, _, err := m.runLifecycleCommand(ctx, m.lifecycleTimeout(m.createTimeout, defaultCreateTimeout), "create", args...)
 	return err
@@ -268,7 +268,7 @@ func (m Manager) executeStep(ctx context.Context, containerName string, containe
 	}
 
 	start := time.Now()
-	err = runCapturedCommand(ctx, "", m.binary, stdoutCapture, stderrCapture, "exec", containerName, "sh", "-lc", step.Command)
+	err = runCapturedCommand(ctx, "", m.binary, stdoutCapture, stderrCapture, "exec", containerName, "sh", "-c", step.Command)
 	duration := time.Since(start).Milliseconds()
 	exitCode := exitCode(err)
 
