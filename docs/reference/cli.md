@@ -68,6 +68,9 @@ Flags:
 - `--fail-on`: comma-separated recommendations that should fail the command, default `block,rerun`
 - `--ecosystem`, `--package`, `--current`, `--candidate`: optional metadata overrides
 - `--fixture`, `--scenario`, `--rules`: optional path or preset overrides
+- `--dependency-files-changed`: whether dependency-relevant files changed, one of `true`, `false`, or `unknown`
+
+`--dependency-files-changed` can also be supplied with `LIMIER_CI_DEPENDENCY_FILES_CHANGED`. When no dependency metadata is available, Limier only returns `not_applicable` if this signal is `false`. A `true` or missing/`unknown` signal returns `needs_review` so dependency-file pull requests do not pass as unrelated changes.
 
 ## `limier inspect`
 

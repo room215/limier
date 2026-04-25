@@ -18,18 +18,19 @@ import (
 )
 
 type githubCIOptions struct {
-	outputDir        string
-	failOn           string
-	ecosystem        string
-	packageName      string
-	currentVersion   string
-	candidateVersion string
-	fixturePath      string
-	scenarioPath     string
-	rulesPath        string
-	metadataOutcome  string
-	prAuthor         string
-	getenv           func(string) string
+	outputDir              string
+	failOn                 string
+	ecosystem              string
+	packageName            string
+	currentVersion         string
+	candidateVersion       string
+	fixturePath            string
+	scenarioPath           string
+	rulesPath              string
+	metadataOutcome        string
+	dependencyFilesChanged string
+	prAuthor               string
+	getenv                 func(string) string
 }
 
 type dependencyUpgrade struct {
@@ -91,6 +92,7 @@ func newGitHubCICommand() *cobra.Command {
 	cmd.Flags().StringVar(&options.fixturePath, "fixture", "", "Path or preset for the sample application fixture")
 	cmd.Flags().StringVar(&options.scenarioPath, "scenario", "", "Path or preset for the scenario manifest")
 	cmd.Flags().StringVar(&options.rulesPath, "rules", "", "Path or preset for the rules file")
+	cmd.Flags().StringVar(&options.dependencyFilesChanged, "dependency-files-changed", "", "Whether dependency-relevant files changed: true, false, or unknown")
 
 	return cmd
 }
@@ -292,12 +294,24 @@ func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor st
 		options.getEnv("DEPENDABOT_NEW_VERSION"),
 	)
 
+	dependencyFilesChanged, rawDependencyFilesChanged, signalOK := resolveDependencyFilesChangeSignal(options)
+	if !signalOK {
+		return dependencyUpgrade{}, skippedStatus("rerun", verdict.RecommendationRerun, fmt.Sprintf("Unsupported dependency file change signal %q; use true, false, or unknown.", rawDependencyFilesChanged), prNumber), false
+	}
+
 	if metadataLookupFailed(options, prAuthor) && (rawEcosystem == "" || rawPackage == "" || current == "" || candidate == "") {
 		return dependencyUpgrade{}, skippedStatus("rerun", verdict.RecommendationRerun, "Dependabot metadata lookup failed, so Limier could not safely determine the dependency update.", prNumber), false
 	}
 
 	if strings.TrimSpace(rawEcosystem) == "" && strings.TrimSpace(rawPackage) == "" && strings.TrimSpace(current) == "" && strings.TrimSpace(candidate) == "" {
-		return dependencyUpgrade{}, skippedStatus("not_applicable", verdict.RecommendationGoodToGo, "No dependency metadata was available, so Limier did not run.", prNumber), false
+		switch dependencyFilesChanged {
+		case dependencyFilesChangeNo:
+			return dependencyUpgrade{}, skippedStatus("not_applicable", verdict.RecommendationGoodToGo, "No dependency-relevant files changed, so Limier did not run.", prNumber), false
+		case dependencyFilesChangeYes:
+			return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "Dependency-relevant files changed, but no dependency metadata was available; review this update manually.", prNumber), false
+		default:
+			return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "No dependency metadata was available and dependency-file changes were not classified; review this update manually.", prNumber), false
+		}
 	}
 
 	ecosystem := normalizeDependabotEcosystem(rawEcosystem)
@@ -323,6 +337,35 @@ func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor st
 		CurrentVersion:   strings.TrimSpace(current),
 		CandidateVersion: strings.TrimSpace(candidate),
 	}, ciStatus{}, true
+}
+
+type dependencyFilesChangeSignal int
+
+const (
+	dependencyFilesChangeUnknown dependencyFilesChangeSignal = iota
+	dependencyFilesChangeNo
+	dependencyFilesChangeYes
+)
+
+func resolveDependencyFilesChangeSignal(options githubCIOptions) (dependencyFilesChangeSignal, string, bool) {
+	raw := firstNonEmpty(
+		options.dependencyFilesChanged,
+		options.getEnv("LIMIER_CI_DEPENDENCY_FILES_CHANGED"),
+	)
+	if raw == "" {
+		return dependencyFilesChangeUnknown, "", true
+	}
+
+	switch strings.ToLower(raw) {
+	case "1", "true", "yes":
+		return dependencyFilesChangeYes, raw, true
+	case "0", "false", "no":
+		return dependencyFilesChangeNo, raw, true
+	case "unknown":
+		return dependencyFilesChangeUnknown, raw, true
+	default:
+		return dependencyFilesChangeUnknown, raw, false
+	}
 }
 
 func metadataLookupFailed(options githubCIOptions, prAuthor string) bool {
