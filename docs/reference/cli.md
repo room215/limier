@@ -29,8 +29,8 @@ Flags:
 - `--package`: dependency name to compare
 - `--current`: baseline version
 - `--candidate`: candidate version
-- `--fixture`: path to the sample application directory, or a preset. Defaults to `preset:npm-require` for npm.
-- `--scenario`: path to the scenario manifest, or a preset. Defaults to `preset:npm-ci` for npm.
+- `--fixture`: path to the sample application directory, or a preset. Defaults to `preset:<ecosystem>-require` for `npm`, `pip`, and `cargo`.
+- `--scenario`: path to the scenario manifest, or a preset. Defaults to `preset:<ecosystem>-ci` for `npm`, `pip`, and `cargo`.
 - `--rules`: path to the rules file, or a preset. Defaults to `preset:default`.
 - `--report`: path for the JSON report, default `report.json`
 - `--summary`: path for the Markdown summary, default `summary.md`
@@ -71,6 +71,8 @@ Flags:
 - `--dependency-files-changed`: whether dependency-relevant files changed, one of `true`, `false`, or `unknown`
 
 `--dependency-files-changed` can also be supplied with `LIMIER_CI_DEPENDENCY_FILES_CHANGED`. When no dependency metadata is available, Limier only returns `not_applicable` if this signal is `false`. A `true` or missing/`unknown` signal returns `needs_review` so dependency-file pull requests do not pass as unrelated changes.
+
+When dependency metadata is complete, the GitHub CI integration has generic default presets for `npm`, `pip`, and `cargo`. Pass `--fixture` and `--scenario` when your project needs a richer, project-specific behavioral check.
 
 ## `limier inspect`
 

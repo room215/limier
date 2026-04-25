@@ -1,0 +1,13 @@
+version: 1
+name: cargo generic dependency review
+repeats: 2
+workdir: /workspace
+network:
+  mode: default
+evidence:
+  capture_host_signals: false
+success:
+  exit_code: 0
+steps:
+  - name: install dependency
+    run: install

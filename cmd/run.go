@@ -182,7 +182,7 @@ func resolveRunPresets(options runOptions) (runOptions, func(), error) {
 	}
 	cleanups = append(cleanups, cleanupOne)
 
-	resolved.fixturePath, cleanupOne, err = preset.ResolveFixture(options.fixturePath, options.ecosystem)
+	resolved.fixturePath, cleanupOne, err = preset.ResolveFixture(options.fixturePath, options.ecosystem, options.packageName)
 	if err != nil {
 		cleanup()
 		return runOptions{}, nil, err

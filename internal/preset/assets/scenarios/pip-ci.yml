@@ -1,0 +1,41 @@
+version: 1
+name: pip generic dependency review
+repeats: 2
+workdir: /workspace
+network:
+  mode: default
+evidence:
+  capture_host_signals: false
+success:
+  exit_code: 0
+steps:
+  - name: install dependency
+    run: install
+  - name: probe import
+    run: exercise
+    command: |
+      python - <<'PY'
+      import importlib
+      import os
+
+      package = os.environ.get("LIMIER_PACKAGE", "").strip()
+      candidates = []
+      for candidate in (
+          package,
+          package.replace("-", "_"),
+          package.replace(".", "_").replace("-", "_"),
+      ):
+          if candidate and candidate not in candidates:
+              candidates.append(candidate)
+
+      for candidate in candidates:
+          try:
+              importlib.import_module(candidate)
+          except BaseException as exc:
+              print(f"limier fixture: import {candidate!r} failed: {exc}")
+              continue
+          print(f"limier fixture: imported {candidate!r}")
+          break
+      else:
+          print("limier fixture: package installed; no generic import succeeded")
+      PY
