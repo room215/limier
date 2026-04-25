@@ -66,6 +66,7 @@ For GitHub pull requests, the usual setup is:
 - trigger on `pull_request`
 - keep the workflow required and always reachable for the default pull request activity types such as `opened`, `synchronize`, and `reopened`
 - use a cheap first step or job to detect whether the pull request changed dependency manifests, lockfiles, Limier config, or the Limier workflow itself
+- pass that classifier result to `limier ci github` with `--dependency-files-changed` or `LIMIER_CI_DEPENDENCY_FILES_CHANGED`
 - run Limier only when you can derive a real baseline and candidate version pair
 - pair the workflow with native review policy for dependency files when an automated diff is not available
 
@@ -96,7 +97,7 @@ If the answer is "no dependency change," the workflow should publish a short "no
 
 If the answer is "yes, and the upgrade is machine-parsable," run `limier run` and let its verdict drive the policy.
 
-If the answer is "yes, but there is no safe baseline/candidate pair," make that explicit in the summary and rely on native GitHub review policy such as `CODEOWNERS` or repository rulesets for those dependency files.
+If the answer is "yes, but there is no safe baseline/candidate pair," pass `--dependency-files-changed true` so `limier ci github` reports `needs_review`, then rely on native GitHub review policy such as `CODEOWNERS` or repository rulesets for those dependency files.
 
 ### Avoid Workflow-Level Path Filters On A Required Workflow
 

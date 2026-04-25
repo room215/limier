@@ -9,14 +9,15 @@ import (
 	"testing"
 )
 
-func TestRunGitHubCIWritesNotApplicableStatusWithoutMetadata(t *testing.T) {
+func TestRunGitHubCIWritesNotApplicableStatusWithoutMetadataOrDependencyFiles(t *testing.T) {
 	t.Parallel()
 
 	outputDir := filepath.Join(t.TempDir(), "limier")
 	if err := runGitHubCI(t.Context(), githubCIOptions{
-		outputDir: outputDir,
-		failOn:    "block,rerun",
-		getenv:    emptyCIEnv,
+		outputDir:              outputDir,
+		failOn:                 "block,rerun",
+		dependencyFilesChanged: "false",
+		getenv:                 emptyCIEnv,
 	}); err != nil {
 		t.Fatalf("runGitHubCI() error = %v", err)
 	}
@@ -33,8 +34,76 @@ func TestRunGitHubCIWritesNotApplicableStatusWithoutMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile(build-summary.md) error = %v", err)
 	}
-	if !strings.Contains(string(data), "No dependency metadata was available") {
-		t.Fatalf("build summary = %q, want no metadata message", string(data))
+	if !strings.Contains(string(data), "No dependency-relevant files changed") {
+		t.Fatalf("build summary = %q, want no dependency files message", string(data))
+	}
+}
+
+func TestRunGitHubCIRequiresReviewWithoutMetadataWhenDependencyFilesChanged(t *testing.T) {
+	t.Parallel()
+
+	outputDir := filepath.Join(t.TempDir(), "limier")
+	err := runGitHubCI(t.Context(), githubCIOptions{
+		outputDir:              outputDir,
+		failOn:                 "needs_review,block,rerun",
+		dependencyFilesChanged: "true",
+		getenv:                 emptyCIEnv,
+	})
+	requireExitCode(t, err, 1)
+
+	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
+	if status.Status != "needs_review" {
+		t.Fatalf("status.Status = %q, want needs_review", status.Status)
+	}
+	if status.OperatorRecommendation != "needs_review" {
+		t.Fatalf("status.OperatorRecommendation = %q, want needs_review", status.OperatorRecommendation)
+	}
+	if !strings.Contains(status.Message, "Dependency-relevant files changed") {
+		t.Fatalf("status.Message = %q, want dependency file change message", status.Message)
+	}
+}
+
+func TestRunGitHubCIRequiresReviewWithoutDependencyFileSignal(t *testing.T) {
+	t.Parallel()
+
+	outputDir := filepath.Join(t.TempDir(), "limier")
+	err := runGitHubCI(t.Context(), githubCIOptions{
+		outputDir: outputDir,
+		failOn:    "needs_review,block,rerun",
+		getenv:    emptyCIEnv,
+	})
+	requireExitCode(t, err, 1)
+
+	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
+	if status.Status != "needs_review" {
+		t.Fatalf("status.Status = %q, want needs_review", status.Status)
+	}
+	if !strings.Contains(status.Message, "dependency-file changes were not classified") {
+		t.Fatalf("status.Message = %q, want unclassified dependency file message", status.Message)
+	}
+}
+
+func TestRunGitHubCIFailsInvalidDependencyFileSignalOutsidePolicy(t *testing.T) {
+	t.Parallel()
+
+	outputDir := filepath.Join(t.TempDir(), "limier")
+	err := runGitHubCI(t.Context(), githubCIOptions{
+		outputDir:              outputDir,
+		failOn:                 "block",
+		dependencyFilesChanged: "treu",
+		getenv:                 emptyCIEnv,
+	})
+	requireExitCode(t, err, 2)
+
+	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
+	if status.Status != "rerun" {
+		t.Fatalf("status.Status = %q, want rerun", status.Status)
+	}
+	if status.PolicyExitCode != 2 {
+		t.Fatalf("status.PolicyExitCode = %d, want 2", status.PolicyExitCode)
+	}
+	if !strings.Contains(status.Message, "Unsupported dependency file change signal") {
+		t.Fatalf("status.Message = %q, want unsupported signal message", status.Message)
 	}
 }
 
@@ -51,19 +120,7 @@ func TestRunGitHubCIFailOnNeedsReviewFailsGroupedUpdate(t *testing.T) {
 		candidateVersion: "1.1.0",
 		getenv:           emptyCIEnv,
 	})
-	if err == nil {
-		t.Fatal("runGitHubCI() error = nil, want exit error")
-	}
-
-	var exitErr interface {
-		ExitCode() int
-	}
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("runGitHubCI() error = %T, want exit error", err)
-	}
-	if exitErr.ExitCode() != 1 {
-		t.Fatalf("ExitCode() = %d, want 1", exitErr.ExitCode())
-	}
+	requireExitCode(t, err, 1)
 
 	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
 	if status.Status != "needs_review" {
@@ -82,19 +139,7 @@ func TestRunGitHubCIFailsClosedWhenDependabotMetadataFails(t *testing.T) {
 		prAuthor:        "dependabot[bot]",
 		getenv:          emptyCIEnv,
 	})
-	if err == nil {
-		t.Fatal("runGitHubCI() error = nil, want exit error")
-	}
-
-	var exitErr interface {
-		ExitCode() int
-	}
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("runGitHubCI() error = %T, want exit error", err)
-	}
-	if exitErr.ExitCode() != 2 {
-		t.Fatalf("ExitCode() = %d, want 2", exitErr.ExitCode())
-	}
+	requireExitCode(t, err, 2)
 
 	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
 	if status.Status != "rerun" {
@@ -119,19 +164,7 @@ func TestRunGitHubCIWritesStatusWhenRunFails(t *testing.T) {
 		rulesPath:        "preset:missing",
 		getenv:           emptyCIEnv,
 	})
-	if err == nil {
-		t.Fatal("runGitHubCI() error = nil, want exit error")
-	}
-
-	var exitErr interface {
-		ExitCode() int
-	}
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("runGitHubCI() error = %T, want exit error", err)
-	}
-	if exitErr.ExitCode() != 2 {
-		t.Fatalf("ExitCode() = %d, want 2", exitErr.ExitCode())
-	}
+	requireExitCode(t, err, 2)
 
 	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
 	if status.Status != "rerun" {
@@ -147,6 +180,24 @@ func TestRunGitHubCIWritesStatusWhenRunFails(t *testing.T) {
 
 func emptyCIEnv(string) string {
 	return ""
+}
+
+func requireExitCode(t *testing.T, err error, want int) {
+	t.Helper()
+
+	if err == nil {
+		t.Fatal("runGitHubCI() error = nil, want exit error")
+	}
+
+	var exitErr interface {
+		ExitCode() int
+	}
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("runGitHubCI() error = %T, want exit error", err)
+	}
+	if exitErr.ExitCode() != want {
+		t.Fatalf("ExitCode() = %d, want %d", exitErr.ExitCode(), want)
+	}
 }
 
 func readCIStatus(t *testing.T, path string) ciStatus {
