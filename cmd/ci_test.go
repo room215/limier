@@ -83,6 +83,30 @@ func TestRunGitHubCIRequiresReviewWithoutDependencyFileSignal(t *testing.T) {
 	}
 }
 
+func TestRunGitHubCIFailsInvalidDependencyFileSignalOutsidePolicy(t *testing.T) {
+	t.Parallel()
+
+	outputDir := filepath.Join(t.TempDir(), "limier")
+	err := runGitHubCI(t.Context(), githubCIOptions{
+		outputDir:              outputDir,
+		failOn:                 "block",
+		dependencyFilesChanged: "treu",
+		getenv:                 emptyCIEnv,
+	})
+	requireExitCode(t, err, 2)
+
+	status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
+	if status.Status != "rerun" {
+		t.Fatalf("status.Status = %q, want rerun", status.Status)
+	}
+	if status.PolicyExitCode != 2 {
+		t.Fatalf("status.PolicyExitCode = %d, want 2", status.PolicyExitCode)
+	}
+	if !strings.Contains(status.Message, "Unsupported dependency file change signal") {
+		t.Fatalf("status.Message = %q, want unsupported signal message", status.Message)
+	}
+}
+
 func TestRunGitHubCIFailOnNeedsReviewFailsGroupedUpdate(t *testing.T) {
 	t.Parallel()
 

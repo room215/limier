@@ -108,7 +108,18 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 
 	prNumber := githubPullRequestNumber(options.getEnv)
 	prAuthor := firstNonEmpty(options.prAuthor, githubPullRequestAuthor(options.getEnv))
-	upgrade, status, ok := resolveDependencyUpgrade(options, prNumber, prAuthor)
+	upgrade, status, ok, err := resolveDependencyUpgrade(options, prNumber, prAuthor)
+	if err != nil {
+		status.PolicyExitCode = 2
+		finishErr := finishCIStatus(status, paths)
+		if finishErr != nil {
+			err = errors.Join(err, finishErr)
+		}
+		return &exitError{
+			code: 2,
+			err:  err,
+		}
+	}
 	if !ok {
 		return finishSkippedCIStatus(status, paths, options.failOn)
 	}
@@ -269,7 +280,7 @@ func ciOutputPaths(outputDir string) ciPaths {
 	}
 }
 
-func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor string) (dependencyUpgrade, ciStatus, bool) {
+func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor string) (dependencyUpgrade, ciStatus, bool, error) {
 	rawEcosystem := firstNonEmpty(
 		options.ecosystem,
 		options.getEnv("LIMIER_CI_ECOSYSTEM"),
@@ -296,39 +307,40 @@ func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor st
 
 	dependencyFilesChanged, rawDependencyFilesChanged, signalOK := resolveDependencyFilesChangeSignal(options)
 	if !signalOK {
-		return dependencyUpgrade{}, skippedStatus("rerun", verdict.RecommendationRerun, fmt.Sprintf("Unsupported dependency file change signal %q; use true, false, or unknown.", rawDependencyFilesChanged), prNumber), false
+		message := fmt.Sprintf("Unsupported dependency file change signal %q; use true, false, or unknown.", rawDependencyFilesChanged)
+		return dependencyUpgrade{}, skippedStatus("rerun", verdict.RecommendationRerun, message, prNumber), false, errors.New(message)
 	}
 
 	if metadataLookupFailed(options, prAuthor) && (rawEcosystem == "" || rawPackage == "" || current == "" || candidate == "") {
-		return dependencyUpgrade{}, skippedStatus("rerun", verdict.RecommendationRerun, "Dependabot metadata lookup failed, so Limier could not safely determine the dependency update.", prNumber), false
+		return dependencyUpgrade{}, skippedStatus("rerun", verdict.RecommendationRerun, "Dependabot metadata lookup failed, so Limier could not safely determine the dependency update.", prNumber), false, nil
 	}
 
 	if strings.TrimSpace(rawEcosystem) == "" && strings.TrimSpace(rawPackage) == "" && strings.TrimSpace(current) == "" && strings.TrimSpace(candidate) == "" {
 		switch dependencyFilesChanged {
 		case dependencyFilesChangeNo:
-			return dependencyUpgrade{}, skippedStatus("not_applicable", verdict.RecommendationGoodToGo, "No dependency-relevant files changed, so Limier did not run.", prNumber), false
+			return dependencyUpgrade{}, skippedStatus("not_applicable", verdict.RecommendationGoodToGo, "No dependency-relevant files changed, so Limier did not run.", prNumber), false, nil
 		case dependencyFilesChangeYes:
-			return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "Dependency-relevant files changed, but no dependency metadata was available; review this update manually.", prNumber), false
+			return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "Dependency-relevant files changed, but no dependency metadata was available; review this update manually.", prNumber), false, nil
 		default:
-			return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "No dependency metadata was available and dependency-file changes were not classified; review this update manually.", prNumber), false
+			return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "No dependency metadata was available and dependency-file changes were not classified; review this update manually.", prNumber), false, nil
 		}
 	}
 
 	ecosystem := normalizeDependabotEcosystem(rawEcosystem)
 	if ecosystem == "" || rawPackage == "" || current == "" || candidate == "" {
-		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "Dependency metadata was incomplete; review this update manually.", prNumber), false
+		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, "Dependency metadata was incomplete; review this update manually.", prNumber), false, nil
 	}
 
 	packages := dependencyNames(rawPackage)
 	if len(packages) != 1 {
-		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("Limier needs exactly one dependency; got %d (%s).", len(packages), strings.Join(packages, ", ")), prNumber), false
+		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("Limier needs exactly one dependency; got %d (%s).", len(packages), strings.Join(packages, ", ")), prNumber), false, nil
 	}
 
 	if _, err := adapters.Lookup(ecosystem); err != nil {
-		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("Ecosystem %q is not supported by this Limier integration.", rawEcosystem), prNumber), false
+		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("Ecosystem %q is not supported by this Limier integration.", rawEcosystem), prNumber), false, nil
 	}
 	if ecosystem != "npm" && (strings.TrimSpace(options.fixturePath) == "" || strings.TrimSpace(options.scenarioPath) == "") {
-		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("The default GitHub CI preset currently supports npm; pass --fixture and --scenario to review %s updates.", ecosystem), prNumber), false
+		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("The default GitHub CI preset currently supports npm; pass --fixture and --scenario to review %s updates.", ecosystem), prNumber), false, nil
 	}
 
 	return dependencyUpgrade{
@@ -336,7 +348,7 @@ func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor st
 		Package:          packages[0],
 		CurrentVersion:   strings.TrimSpace(current),
 		CandidateVersion: strings.TrimSpace(candidate),
-	}, ciStatus{}, true
+	}, ciStatus{}, true, nil
 }
 
 type dependencyFilesChangeSignal int
