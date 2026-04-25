@@ -120,9 +120,19 @@ func TestResolveFixtureRejectsUnsafeGeneratedPackageNames(t *testing.T) {
 			packageName: "requests\nurllib3",
 		},
 		{
+			name:        "pip leading dash",
+			ecosystem:   "pip",
+			packageName: "-rfoo",
+		},
+		{
 			name:        "cargo semicolon",
 			ecosystem:   "cargo",
 			packageName: "serde;rm",
+		},
+		{
+			name:        "cargo leading dash",
+			ecosystem:   "cargo",
+			packageName: "-serde",
 		},
 	}
 

@@ -16,7 +16,7 @@ const prefix = "preset:"
 //go:embed assets
 var assets embed.FS
 
-var pipPackagePattern = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+var pipPackagePattern = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$`)
 
 type Cleanup func()
 
@@ -232,8 +232,10 @@ func validatePackageName(packageName string, ecosystem string) (string, error) {
 			return "", fmt.Errorf("package %q is not supported by the pip fixture preset", packageName)
 		}
 	case "cargo":
-		for _, r := range normalized {
+		for i, r := range normalized {
 			switch {
+			case i == 0 && !isASCIILetter(r):
+				return "", fmt.Errorf("package %q is not supported by the cargo fixture preset", packageName)
 			case r >= 'a' && r <= 'z':
 			case r >= 'A' && r <= 'Z':
 			case r >= '0' && r <= '9':
@@ -247,4 +249,8 @@ func validatePackageName(packageName string, ecosystem string) (string, error) {
 	}
 
 	return normalized, nil
+}
+
+func isASCIILetter(r rune) bool {
+	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
 }
