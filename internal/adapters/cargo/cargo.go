@@ -399,5 +399,5 @@ func normalizeDependencyName(value string) string {
 }
 
 func defaultInstallCommand() string {
-	return fmt.Sprintf("cargo check --manifest-path %s && cargo metadata --format-version=1 --manifest-path %s > %s", manifestName, manifestName, installedVersionFile)
+	return fmt.Sprintf("cargo check --quiet --manifest-path %s && cargo metadata --quiet --format-version=1 --manifest-path %s > %s", manifestName, manifestName, installedVersionFile)
 }

@@ -178,6 +178,67 @@ func TestRunGitHubCIWritesStatusWhenRunFails(t *testing.T) {
 	}
 }
 
+func TestRunGitHubCIUsesDefaultPresetsForSupportedNonNpmEcosystems(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name      string
+		ecosystem string
+		pkg       string
+		current   string
+		candidate string
+	}{
+		{
+			name:      "pip",
+			ecosystem: "pip",
+			pkg:       "requests",
+			current:   "2.31.0",
+			candidate: "2.32.0",
+		},
+		{
+			name:      "cargo",
+			ecosystem: "cargo",
+			pkg:       "serde",
+			current:   "1.0.217",
+			candidate: "1.0.219",
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			outputDir := filepath.Join(t.TempDir(), "limier")
+			err := runGitHubCI(t.Context(), githubCIOptions{
+				outputDir:        outputDir,
+				failOn:           "block,rerun",
+				ecosystem:        testCase.ecosystem,
+				packageName:      testCase.pkg,
+				currentVersion:   testCase.current,
+				candidateVersion: testCase.candidate,
+				rulesPath:        "preset:missing",
+				getenv:           emptyCIEnv,
+			})
+			requireExitCode(t, err, 2)
+
+			status := readCIStatus(t, filepath.Join(outputDir, "status.json"))
+			if status.Status != "rerun" {
+				t.Fatalf("status.Status = %q, want rerun", status.Status)
+			}
+			if status.Ecosystem != testCase.ecosystem {
+				t.Fatalf("status.Ecosystem = %q, want %q", status.Ecosystem, testCase.ecosystem)
+			}
+			if !strings.Contains(status.Message, "unsupported rules preset") {
+				t.Fatalf("status.Message = %q, want unsupported rules preset", status.Message)
+			}
+			if strings.Contains(status.Message, "default GitHub CI preset currently supports npm") {
+				t.Fatalf("status.Message = %q, want no npm-only preset message", status.Message)
+			}
+		})
+	}
+}
+
 func emptyCIEnv(string) string {
 	return ""
 }

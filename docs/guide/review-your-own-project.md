@@ -21,11 +21,13 @@ Choose the smallest realistic app that still reproduces the behavior you care ab
 - easy to understand
 - close enough to production behavior to be meaningful
 
-### Fixture Requirements By Ecosystem
+### Custom Fixture Requirements By Ecosystem
 
 - `npm`: the fixture must contain a `package.json`, and the dependency under test must appear in `dependencies` or `devDependencies`
 - `pip`: the fixture must contain a `requirements.txt`, and the dependency under test must be declared there
 - `cargo`: the fixture must contain a `Cargo.toml`, and the dependency under test must be declared in Cargo dependency tables
+
+The built-in CI presets can generate generic fixtures for `npm`, `pip`, and `cargo`. These requirements apply when you provide your own fixture because Limier should not guess how your real project declares dependencies.
 
 ::: tip Keep the target dependency simple at first
 For `npm`, Limier currently expects the dependency under test to use a version-style spec. Source-backed specs such as `workspace:`, `file:`, `git:`, `github:`, or `http:` are not a good first target.

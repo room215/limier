@@ -191,7 +191,7 @@ If the answer is "yes, and the upgrade is machine-parsable," pass the dependency
 
 If the answer is "yes, but there is no safe baseline/candidate pair," pass `LIMIER_CI_DEPENDENCY_FILES_CHANGED=true` so `limier ci github` reports `needs_review`, then rely on native GitHub review policy such as `CODEOWNERS` or repository rulesets for those dependency files.
 
-The default GitHub CI preset supports npm. For other ecosystems, pass `--fixture` and `--scenario` so Limier knows how to exercise the candidate package in your project.
+The default GitHub CI preset supports generic `npm`, `pip`, and `cargo` dependency reviews. Pass `--fixture` and `--scenario` when your project needs a richer behavioral check than the generic preset can provide.
 
 ### Avoid Workflow-Level Path Filters On A Required Workflow
 

@@ -145,10 +145,10 @@ func TestDefaultInstallCommandExecutesCargoCheckBeforeMetadata(t *testing.T) {
 
 	command := defaultInstallCommand()
 
-	if !strings.Contains(command, "cargo check --manifest-path Cargo.toml") {
+	if !strings.Contains(command, "cargo check --quiet --manifest-path Cargo.toml") {
 		t.Fatalf("defaultInstallCommand() = %q, want cargo check", command)
 	}
-	if !strings.Contains(command, "&& cargo metadata --format-version=1 --manifest-path Cargo.toml > .limier-cargo-metadata.json") {
+	if !strings.Contains(command, "&& cargo metadata --quiet --format-version=1 --manifest-path Cargo.toml > .limier-cargo-metadata.json") {
 		t.Fatalf("defaultInstallCommand() = %q, want metadata export after cargo check", command)
 	}
 }

@@ -339,9 +339,6 @@ func resolveDependencyUpgrade(options githubCIOptions, prNumber int, prAuthor st
 	if _, err := adapters.Lookup(ecosystem); err != nil {
 		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("Ecosystem %q is not supported by this Limier integration.", rawEcosystem), prNumber), false, nil
 	}
-	if ecosystem != "npm" && (strings.TrimSpace(options.fixturePath) == "" || strings.TrimSpace(options.scenarioPath) == "") {
-		return dependencyUpgrade{}, skippedStatus("needs_review", verdict.RecommendationNeedsReview, fmt.Sprintf("The default GitHub CI preset currently supports npm; pass --fixture and --scenario to review %s updates.", ecosystem), prNumber), false, nil
-	}
 
 	return dependencyUpgrade{
 		Ecosystem:        ecosystem,
