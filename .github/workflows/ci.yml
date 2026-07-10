@@ -55,3 +55,42 @@ jobs:
 
       - name: Dynamic fake exploit smoke test
         run: go test -run TestDynamicFakeExploitScenarioBlocksCandidate -v ./internal/limier
+
+  ebpf-docker-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install bpftrace
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes bpftrace
+
+      - name: Check host telemetry prerequisites
+        run: |
+          uname -a
+          docker version
+          bpftrace --version
+          test -f /sys/fs/cgroup/cgroup.controllers
+          sudo bpftrace --info
+
+      - name: Pull smoke-test image
+        run: docker pull alpine:3.20
+
+      - name: Build Docker and eBPF integration test
+        run: go test -c -o "$RUNNER_TEMP/limier-docker-ebpf.test" ./internal/env/docker
+
+      - name: Capture a Docker process with eBPF
+        run: |
+          sudo env LIMIER_EBPF_INTEGRATION=1 \
+            "$RUNNER_TEMP/limier-docker-ebpf.test" \
+            -test.run '^TestManagerCapturesDockerExecWithEBPF$' \
+            -test.v
