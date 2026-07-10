@@ -46,6 +46,20 @@ The script writes:
 - `out/limier/build-summary.md`
 - `out/limier/evidence/`
 
+## GitHub Actions
+
+For pull request dependency review, use the packaged action after checking out the repository:
+
+```yaml
+- uses: actions/checkout@v6
+  with:
+    fetch-depth: 0
+
+- uses: room215/limier-action@v1
+```
+
+The action runs `limier ci github`, maps Dependabot metadata, publishes the build summary, and uploads `out/limier` as an artifact.
+
 ## Development
 
 Build and test with the standard Go toolchain:
