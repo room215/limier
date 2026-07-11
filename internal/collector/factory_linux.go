@@ -307,19 +307,26 @@ func parseBpftraceEvent(line string) (Event, error) {
 }
 
 func buildBpftraceScript(cgroupPath string) string {
-	return fmt.Sprintf(`BEGIN
-{
-  printf("%s\n");
-}
-
-tracepoint:syscalls:sys_enter_execve,
+	return fmt.Sprintf(`tracepoint:syscalls:sys_enter_execve,
 tracepoint:syscalls:sys_enter_execveat
 /cgroup == cgroupid(%q)/
 {
   printf("%s%%llu\t", nsecs);
   join(args.argv, " ");
 }
-`, bpftraceReadyMarker, cgroupPath, bpftraceEventPrefix)
+
+interval:ms:100
+/@limier_ready == 0/
+{
+  @limier_ready = 1;
+  printf("%s\n");
+}
+
+END
+{
+  clear(@limier_ready);
+}
+`, cgroupPath, bpftraceEventPrefix, bpftraceReadyMarker)
 }
 
 func isInterruptExit(err error) bool {

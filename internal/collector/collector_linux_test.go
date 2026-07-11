@@ -11,6 +11,29 @@ import (
 	"testing"
 )
 
+func TestBuildBpftraceScriptSignalsReadyAfterExecProbes(t *testing.T) {
+	script := buildBpftraceScript("/sys/fs/cgroup/limier-test")
+
+	if strings.Contains(script, "BEGIN") {
+		t.Fatal("script contains a BEGIN readiness probe, which fires before other probes are attached")
+	}
+
+	execProbeIndex := strings.Index(script, "tracepoint:syscalls:sys_enter_execveat")
+	readyProbeIndex := strings.Index(script, "interval:ms:100")
+	if execProbeIndex == -1 {
+		t.Fatal("script does not contain the exec tracepoint")
+	}
+	if readyProbeIndex == -1 {
+		t.Fatal("script does not contain the readiness interval")
+	}
+	if readyProbeIndex < execProbeIndex {
+		t.Fatal("readiness interval appears before the exec tracepoint")
+	}
+	if !strings.Contains(script, `printf("`+bpftraceReadyMarker+`\n")`) {
+		t.Fatal("script does not emit the readiness marker")
+	}
+}
+
 func TestBpftraceCollectorCapturesChildExecsInDedicatedCgroup(t *testing.T) {
 	if os.Geteuid() != 0 {
 		t.Skip("requires root to create and manage a dedicated cgroup")
