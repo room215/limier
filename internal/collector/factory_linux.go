@@ -22,6 +22,7 @@ const (
 	bpftraceReadyMarker  = "LIMIER_READY"
 	bpftraceEventPrefix  = "LIMIER_EVENT\t"
 	bpftraceStartTimeout = 10 * time.Second
+	bpftraceDrainGrace   = 250 * time.Millisecond
 	// Stack-backed bpftrace releases, including Ubuntu's package, cap strings at 200 bytes.
 	bpftracePortableMaxStringSize = "200"
 )
@@ -165,7 +166,9 @@ func (c *bpftraceStepCapture) Finish(ctx context.Context) ([]Event, error) {
 		_ = os.Remove(c.scriptPath)
 	}()
 
-	if err := c.stop(ctx); err != nil {
+	drainErr := waitForBpftraceDrain(ctx)
+	stopErr := c.stop(ctx)
+	if err := errors.Join(drainErr, stopErr); err != nil {
 		return nil, &CaptureError{
 			Op:   "finish step capture",
 			Step: c.stepName,
@@ -188,6 +191,18 @@ func (c *bpftraceStepCapture) Finish(ctx context.Context) ([]Event, error) {
 	}
 
 	return events, nil
+}
+
+func waitForBpftraceDrain(ctx context.Context) error {
+	timer := time.NewTimer(bpftraceDrainGrace)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("wait for bpftrace output drain: %w", ctx.Err())
+	}
 }
 
 func (c *bpftraceStepCapture) waitUntilReady(ctx context.Context) error {
