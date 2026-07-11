@@ -118,14 +118,18 @@ In this path, `report.json` is the source of truth. Rendered outputs are alterna
 
 ## Hosted Runners vs Self-Hosted Runners
 
-For GitHub-hosted runners, assume Docker is available but full host-signal capture is not. In that environment you should typically use:
+Telemetry defaults to `required`. Install `bpftrace` and confirm the runner supports cgroup v2 and eBPF before relying on a `good_to_go` recommendation.
+
+The reusable `room215/limier-action` performs this setup on GitHub-hosted Ubuntu runners: it verifies Docker and cgroup v2, installs `bpftrace` when necessary, and runs Limier with the privileges required for capture. Direct CLI and container-image users remain responsible for preparing the host.
+
+Use output-only mode only when kernel telemetry is intentionally unavailable:
 
 ```yaml
-evidence:
-  capture_host_signals: false
+telemetry:
+  mode: off
 ```
 
-Use a self-hosted Linux runner with `bpftrace` installed when you want full host telemetry.
+Output-only comparisons always require human review. A required telemetry failure produces `rerun` rather than silently reducing coverage.
 
 ## Run Limier From The Container Image
 
@@ -161,4 +165,4 @@ docker run --rm \
 
 If that command fails with a Docker socket permission error, make sure the host user already has access to `/var/run/docker.sock`. On Linux, a common fix is to add the Docker group inside the container with `--group-add "$(getent group docker | cut -d: -f3)"` alongside `--user`.
 
-For the easiest containerized setup, disable host-signal capture in the scenario.
+For the easiest containerized setup, use `telemetry.mode: off` and treat the result as requiring human review.

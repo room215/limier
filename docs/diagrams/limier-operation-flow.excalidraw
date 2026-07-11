@@ -1016,10 +1016,10 @@
     {
       "id": "events-note",
       "type": "rectangle",
-      "x": 2596,
-      "y": 343,
-      "width": 445,
-      "height": 161,
+      "x": 2390,
+      "y": 372,
+      "width": 950,
+      "height": 197,
       "angle": 0,
       "strokeColor": "#264653",
       "backgroundColor": "#ffffff",
@@ -1501,7 +1501,7 @@
       "x": 2379.5,
       "y": 358.5,
       "width": 124,
-      "height": 184.5,
+      "height": 270.5,
       "angle": 0,
       "strokeColor": "#3d5a80",
       "backgroundColor": "transparent",
@@ -1538,11 +1538,11 @@
         ],
         [
           0,
-          184.5
+          -199.5
         ],
         [
           -124,
-          184.5
+          -199.5
         ],
         [
           -124,
@@ -1572,7 +1572,7 @@
       "x": 2530.5,
       "y": 272.5,
       "width": 74,
-      "height": 124.5,
+      "height": 28,
       "angle": 0,
       "strokeColor": "#3d5a80",
       "backgroundColor": "transparent",
@@ -1606,14 +1606,6 @@
         [
           0,
           0
-        ],
-        [
-          0,
-          -124.5
-        ],
-        [
-          74,
-          -124.5
         ],
         [
           74,
@@ -3056,10 +3048,10 @@
     {
       "id": "s_k_L47jhPZEgk-Xx4mY8",
       "type": "text",
-      "x": 2680.923828125,
-      "y": 374,
-      "width": 276.15234375,
-      "height": 90,
+      "x": 2481.95751953125,
+      "y": 421,
+      "width": 768.0849609375,
+      "height": 22.5,
       "angle": 0,
       "strokeColor": "#17324d",
       "backgroundColor": "transparent",
@@ -3080,13 +3072,13 @@
       "updated": 1776607283582,
       "link": null,
       "locked": false,
-      "text": "Evidence includes stdout, stderr,\nexit codes, and optional Linux\nhost-signal events when capture is\nenabled.",
+      "text": "Evidence always includes stdout, stderr, and exit codes. Required mode adds process telemetry.",
       "fontSize": 18,
       "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "events-note",
-      "originalText": "Evidence includes stdout, stderr, exit codes, and optional Linux host-signal events when capture is enabled.",
+      "originalText": "Evidence always includes stdout, stderr, and exit codes. Required mode adds process telemetry.",
       "autoResize": true,
       "lineHeight": 1.25
     },
@@ -3131,7 +3123,7 @@
       "id": "QKBbZR47wLEfw0rftWiey",
       "type": "text",
       "x": 2307.4892578125,
-      "y": 531.75,
+      "y": 147.75,
       "width": 20.021484375,
       "height": 22.5,
       "angle": 0,
@@ -3168,7 +3160,7 @@
       "id": "HStCDhwrn725zocsJ_RRa",
       "type": "text",
       "x": 2553.49462890625,
-      "y": 136.75,
+      "y": 247.25,
       "width": 28.0107421875,
       "height": 22.5,
       "angle": 0,

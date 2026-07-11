@@ -142,6 +142,11 @@ func sampleReviewReport() report.Report {
 		TechnicalVerdict:       verdict.TechnicalUnexpectedDiff,
 		OperatorRecommendation: verdict.RecommendationNeedsReview,
 		ExitCode:               1,
+		Telemetry: report.Telemetry{
+			Mode:    "required",
+			Status:  report.TelemetryStatusActive,
+			Sensors: []string{"process.exec"},
+		},
 		Baseline: report.Side{
 			Stable: true,
 			Summary: report.SideSummary{
@@ -171,6 +176,10 @@ func sampleInconclusiveReport() report.Report {
 		TechnicalVerdict:       verdict.TechnicalInconclusive,
 		OperatorRecommendation: verdict.RecommendationRerun,
 		ExitCode:               2,
+		Telemetry: report.Telemetry{
+			Mode:   "required",
+			Status: report.TelemetryStatusFailed,
+		},
 		Baseline: report.Side{
 			Stable: true,
 			Summary: report.SideSummary{

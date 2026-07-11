@@ -9,8 +9,81 @@ import (
 
 	"github.com/room215/limier/internal/adapter"
 	"github.com/room215/limier/internal/env/docker"
+	"github.com/room215/limier/internal/report"
 	"github.com/room215/limier/internal/scenario"
+	"github.com/room215/limier/internal/verdict"
 )
+
+func TestResolveTelemetryModeUsesScenarioDefaultAndCLIOverride(t *testing.T) {
+	t.Parallel()
+
+	mode, err := resolveTelemetryMode(scenario.TelemetryModeRequired, "")
+	if err != nil {
+		t.Fatalf("resolveTelemetryMode(default) error = %v", err)
+	}
+	if mode != scenario.TelemetryModeRequired {
+		t.Fatalf("resolveTelemetryMode(default) = %q, want required", mode)
+	}
+
+	mode, err = resolveTelemetryMode(scenario.TelemetryModeRequired, "off")
+	if err != nil {
+		t.Fatalf("resolveTelemetryMode(override) error = %v", err)
+	}
+	if mode != scenario.TelemetryModeOff {
+		t.Fatalf("resolveTelemetryMode(override) = %q, want off", mode)
+	}
+}
+
+func TestResolveTelemetryModeRejectsInvalidOverride(t *testing.T) {
+	t.Parallel()
+
+	if _, err := resolveTelemetryMode(scenario.TelemetryModeRequired, "sometimes"); err == nil {
+		t.Fatal("resolveTelemetryMode() error = nil, want invalid override error")
+	}
+}
+
+func TestApplyTelemetryCoverageRequiresReviewWhenDisabled(t *testing.T) {
+	t.Parallel()
+
+	runReport := report.Report{
+		Telemetry: report.Telemetry{
+			Mode:   "off",
+			Status: report.TelemetryStatusDisabled,
+		},
+		TechnicalVerdict:       verdict.TechnicalNoDiff,
+		OperatorRecommendation: verdict.RecommendationGoodToGo,
+		ExitCode:               0,
+	}
+
+	applyTelemetryCoverage(&runReport)
+
+	if runReport.OperatorRecommendation != verdict.RecommendationNeedsReview {
+		t.Fatalf("recommendation = %q, want needs_review", runReport.OperatorRecommendation)
+	}
+	if runReport.ExitCode != 1 {
+		t.Fatalf("exit code = %d, want 1", runReport.ExitCode)
+	}
+	if len(runReport.Findings) != 1 || runReport.Findings[0].Kind != "telemetry_coverage_incomplete" {
+		t.Fatalf("findings = %#v, want telemetry coverage finding", runReport.Findings)
+	}
+}
+
+func TestResultWithDiagnosticMarksTelemetryCaptureFailed(t *testing.T) {
+	t.Parallel()
+
+	result := resultWithDiagnostic(report.Report{
+		Telemetry: report.Telemetry{Mode: "required"},
+	}, report.NewDiagnostic(
+		report.DiagnosticCategoryExecution,
+		"candidate_telemetry_capture_failed",
+		"capture failed",
+		"rerun",
+	))
+
+	if result.Report.Telemetry.Status != report.TelemetryStatusFailed {
+		t.Fatalf("telemetry status = %q, want failed", result.Report.Telemetry.Status)
+	}
+}
 
 func TestSideEnvUsesLimierKeys(t *testing.T) {
 	t.Parallel()

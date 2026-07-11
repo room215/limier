@@ -25,6 +25,7 @@ type runOptions struct {
 	reportPath       string
 	summaryPath      string
 	evidencePath     string
+	telemetryMode    string
 	failOn           string
 }
 
@@ -75,6 +76,7 @@ func newRunCommand() *cobra.Command {
 	cmd.Flags().StringVar(&options.reportPath, "report", options.reportPath, "Path to write report.json")
 	cmd.Flags().StringVar(&options.summaryPath, "summary", options.summaryPath, "Path to write summary.md")
 	cmd.Flags().StringVar(&options.evidencePath, "evidence", options.evidencePath, "Path to write evidence files")
+	cmd.Flags().StringVar(&options.telemetryMode, "telemetry-mode", "", "Telemetry mode override: required or off")
 	cmd.Flags().StringVar(&options.failOn, "fail-on", "", "Comma-separated recommendations that should fail this command; empty preserves Limier defaults")
 
 	_ = cmd.MarkFlagRequired("ecosystem")
@@ -133,6 +135,7 @@ func executeRun(ctx context.Context, options runOptions) (report.Report, error) 
 		ScenarioPath:     strings.TrimSpace(resolved.scenarioPath),
 		RulesPath:        strings.TrimSpace(resolved.rulesPath),
 		EvidencePath:     strings.TrimSpace(resolved.evidencePath),
+		TelemetryMode:    strings.TrimSpace(resolved.telemetryMode),
 	})
 
 	if err := report.WriteAll(options.reportPath, options.summaryPath, result.Report); err != nil {
@@ -146,6 +149,8 @@ func executeRun(ctx context.Context, options runOptions) (report.Report, error) 
 		"technical_verdict", result.Report.TechnicalVerdict,
 		"operator_recommendation", result.Report.OperatorRecommendation,
 		"exit_code", result.Report.ExitCode,
+		"telemetry_mode", result.Report.Telemetry.Mode,
+		"telemetry_status", result.Report.Telemetry.Status,
 		"report_path", options.reportPath,
 		"summary_path", options.summaryPath,
 		"evidence_path", result.Report.Evidence.RootPath,

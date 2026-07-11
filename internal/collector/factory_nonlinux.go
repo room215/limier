@@ -12,7 +12,7 @@ func newFactory() Factory {
 
 func (unsupportedFactory) Start(RunContext) (RunCollector, error) {
 	return nil, &CaptureError{
-		Op:  "start host signal collector",
-		Err: errors.New("real host signal capture requires Linux"),
+		Op:  "start telemetry collector",
+		Err: errors.New("kernel telemetry capture requires Linux"),
 	}
 }

@@ -4,6 +4,7 @@
 - Technical verdict: `inconclusive`
 - Operator recommendation: `rerun`
 - Exit code: `2`
+- Telemetry: mode `required`, status `failed`, sensors none
 - Baseline stability: 1 repeat(s), stable `true`
 - Candidate stability: 0 repeat(s), stable `false`
 - Diagnostic status: structured inconclusive diagnostic available.

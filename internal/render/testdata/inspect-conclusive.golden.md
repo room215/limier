@@ -4,6 +4,7 @@
 - Technical verdict: `unexpected_diff`
 - Operator recommendation: `needs_review`
 - Exit code: `1`
+- Telemetry: mode `required`, status `active`, sensors `process.exec`
 - Baseline stability: 2 repeat(s), stable `true`
 - Candidate stability: 2 repeat(s), stable `true`
 - Diagnostic status: no structured diagnostic; the report is conclusive.

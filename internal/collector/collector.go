@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const EventKindProcessExec = "process.exec"
+
 type Event struct {
 	Kind      string    `json:"kind"`
 	Step      string    `json:"step,omitempty"`

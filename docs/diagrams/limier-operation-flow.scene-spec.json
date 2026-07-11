@@ -314,7 +314,7 @@
     {
       "id": "events-note",
       "target": "compare",
-      "label": "Evidence includes stdout, stderr, exit codes, and optional Linux host-signal events when capture is enabled.",
+      "label": "Evidence always includes stdout, stderr, and exit codes. Required mode adds process telemetry.",
       "placement": "bottom"
     },
     {

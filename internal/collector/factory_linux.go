@@ -19,10 +19,12 @@ import (
 )
 
 const (
-	bpftraceReadyMarker   = "LIMIER_READY"
-	bpftraceEventPrefix   = "LIMIER_EVENT\t"
-	bpftraceStartTimeout  = 10 * time.Second
-	bpftraceMaxStringSize = "4096"
+	bpftraceReadyMarker  = "LIMIER_READY"
+	bpftraceEventPrefix  = "LIMIER_EVENT\t"
+	bpftraceStartTimeout = 10 * time.Second
+	bpftraceDrainGrace   = 250 * time.Millisecond
+	// Stack-backed bpftrace releases, including Ubuntu's package, cap strings at 200 bytes.
+	bpftracePortableMaxStringSize = "200"
 )
 
 type bpftraceFactory struct{}
@@ -38,6 +40,7 @@ type bpftraceStepCapture struct {
 	cmd        *exec.Cmd
 	stderr     bytes.Buffer
 	waitDone   chan struct{}
+	stdoutDone chan struct{}
 	readyCh    chan struct{}
 
 	mu         sync.Mutex
@@ -56,7 +59,7 @@ func (bpftraceFactory) Start(run RunContext) (RunCollector, error) {
 	binary, err := exec.LookPath("bpftrace")
 	if err != nil {
 		return nil, &CaptureError{
-			Op:  "start host signal collector",
+			Op:  "start telemetry collector",
 			Err: fmt.Errorf("locate bpftrace: %w", err),
 		}
 	}
@@ -106,7 +109,7 @@ func (c *bpftraceRunCollector) StartStepCapture(ctx context.Context, step StepCo
 	}
 
 	cmd := exec.Command(c.binary, "-q", scriptPath)
-	cmd.Env = append(os.Environ(), "BPFTRACE_MAX_STRLEN="+bpftraceMaxStringSize)
+	cmd.Env = append(os.Environ(), "BPFTRACE_MAX_STRLEN="+bpftracePortableMaxStringSize)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		_ = os.Remove(scriptPath)
@@ -122,6 +125,7 @@ func (c *bpftraceRunCollector) StartStepCapture(ctx context.Context, step StepCo
 		scriptPath: scriptPath,
 		cmd:        cmd,
 		waitDone:   make(chan struct{}),
+		stdoutDone: make(chan struct{}),
 		readyCh:    make(chan struct{}),
 	}
 	cmd.Stderr = &stepCapture.stderr
@@ -137,8 +141,9 @@ func (c *bpftraceRunCollector) StartStepCapture(ctx context.Context, step StepCo
 	}
 
 	go func() {
+		err := cmd.Wait()
 		stepCapture.mu.Lock()
-		stepCapture.waitErr = cmd.Wait()
+		stepCapture.waitErr = err
 		stepCapture.mu.Unlock()
 		close(stepCapture.waitDone)
 	}()
@@ -164,11 +169,23 @@ func (c *bpftraceStepCapture) Finish(ctx context.Context) ([]Event, error) {
 		_ = os.Remove(c.scriptPath)
 	}()
 
-	if err := c.stop(ctx); err != nil {
+	drainErr := waitForBpftraceDrain(ctx)
+	stopErr := c.stop(ctx)
+	if err := errors.Join(drainErr, stopErr); err != nil {
 		return nil, &CaptureError{
 			Op:   "finish step capture",
 			Step: c.stepName,
 			Err:  err,
+		}
+	}
+
+	select {
+	case <-c.stdoutDone:
+	case <-ctx.Done():
+		return nil, &CaptureError{
+			Op:   "finish step capture",
+			Step: c.stepName,
+			Err:  fmt.Errorf("wait for bpftrace output: %w", ctx.Err()),
 		}
 	}
 
@@ -187,6 +204,18 @@ func (c *bpftraceStepCapture) Finish(ctx context.Context) ([]Event, error) {
 	}
 
 	return events, nil
+}
+
+func waitForBpftraceDrain(ctx context.Context) error {
+	timer := time.NewTimer(bpftraceDrainGrace)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("wait for bpftrace output drain: %w", ctx.Err())
+	}
 }
 
 func (c *bpftraceStepCapture) waitUntilReady(ctx context.Context) error {
@@ -246,6 +275,7 @@ func (c *bpftraceStepCapture) commandWaitErr() error {
 
 func (c *bpftraceStepCapture) readStdout(stdout io.ReadCloser) {
 	go func() {
+		defer close(c.stdoutDone)
 		defer stdout.Close()
 
 		scanner := bufio.NewScanner(stdout)
@@ -277,7 +307,7 @@ func (c *bpftraceStepCapture) readStdout(stdout io.ReadCloser) {
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
+		if err := scanner.Err(); err != nil && !errors.Is(err, os.ErrClosed) {
 			c.mu.Lock()
 			if c.stdoutErr == nil {
 				c.stdoutErr = fmt.Errorf("read bpftrace stdout: %w", err)
@@ -299,26 +329,33 @@ func parseBpftraceEvent(line string) (Event, error) {
 	}
 
 	return Event{
-		Kind:      "process.exec",
+		Kind:      EventKindProcessExec,
 		Command:   strings.TrimSpace(parts[1]),
 		Timestamp: time.Unix(0, nsecs).UTC(),
 	}, nil
 }
 
 func buildBpftraceScript(cgroupPath string) string {
-	return fmt.Sprintf(`BEGIN
-{
-  printf("%s\n");
-}
-
-tracepoint:syscalls:sys_enter_execve,
+	return fmt.Sprintf(`tracepoint:syscalls:sys_enter_execve,
 tracepoint:syscalls:sys_enter_execveat
 /cgroup == cgroupid(%q)/
 {
   printf("%s%%llu\t", nsecs);
   join(args.argv, " ");
 }
-`, bpftraceReadyMarker, cgroupPath, bpftraceEventPrefix)
+
+interval:ms:100
+/@limier_ready == 0/
+{
+  @limier_ready = 1;
+  printf("%s\n");
+}
+
+END
+{
+  clear(@limier_ready);
+}
+`, cgroupPath, bpftraceEventPrefix, bpftraceReadyMarker)
 }
 
 func isInterruptExit(err error) bool {

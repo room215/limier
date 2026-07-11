@@ -38,8 +38,8 @@ Do not use this skill for general application security review, dependency policy
 ## Preconditions
 
 - Docker must be available to the current user.
-- Host-signal capture is Linux-only and requires `bpftrace`.
-- On macOS, Windows, or CI environments without `bpftrace`, make sure the scenario sets `capture_host_signals: false` or expect an inconclusive result.
+- Kernel telemetry capture is Linux-only and requires `bpftrace`.
+- On macOS, Windows, or CI environments without `bpftrace`, use `telemetry.mode: off` for an output-only comparison that requires human review, or expect an inconclusive result.
 
 For local development in this repo, prefer:
 
@@ -60,7 +60,7 @@ When the user has not specified otherwise, the repository-owned sample uses:
 ## Recommended Workflow
 
 1. Confirm the ecosystem, package, current version, candidate version, fixture, scenario, and rules file.
-2. Check whether the environment can satisfy the scenario, especially `capture_host_signals`.
+2. Check whether the environment can satisfy the scenario's telemetry mode.
 3. Run Limier with explicit output paths under `out/limier/`.
 4. Read `summary.md` first.
 5. If the result is not `good_to_go`, inspect `evidence/` and any rendered explanation before making claims.
@@ -127,7 +127,7 @@ Treat `rerun` as an environment or determinism problem first, not a safe outcome
 
 - Docker access problems
 - fixture nondeterminism
-- missing Linux host-signal support while `capture_host_signals` is enabled
+- missing Linux telemetry support while `telemetry.mode` is `required`
 - scenario steps failing before comparison completes
 
 When debugging, inspect the scenario, evidence bundle, and environment assumptions before changing rules.

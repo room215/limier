@@ -30,6 +30,7 @@ type Report struct {
 	Input                  Input                  `json:"input"`
 	Scenario               ScenarioIdentity       `json:"scenario"`
 	Rules                  RulesIdentity          `json:"rules"`
+	Telemetry              Telemetry              `json:"telemetry"`
 	Baseline               Side                   `json:"baseline"`
 	Candidate              Side                   `json:"candidate"`
 	Findings               []Finding              `json:"findings,omitempty"`
@@ -52,13 +53,26 @@ type Input struct {
 }
 
 type ScenarioIdentity struct {
-	Name               string   `json:"name"`
-	Path               string   `json:"path"`
-	Repeats            int      `json:"repeats"`
-	Image              string   `json:"image"`
-	Workdir            string   `json:"workdir"`
-	Steps              []string `json:"steps"`
-	CaptureHostSignals bool     `json:"capture_host_signals"`
+	Name    string   `json:"name"`
+	Path    string   `json:"path"`
+	Repeats int      `json:"repeats"`
+	Image   string   `json:"image"`
+	Workdir string   `json:"workdir"`
+	Steps   []string `json:"steps"`
+}
+
+type TelemetryStatus string
+
+const (
+	TelemetryStatusActive   TelemetryStatus = "active"
+	TelemetryStatusDisabled TelemetryStatus = "disabled"
+	TelemetryStatusFailed   TelemetryStatus = "failed"
+)
+
+type Telemetry struct {
+	Mode    string          `json:"mode"`
+	Status  TelemetryStatus `json:"status,omitempty"`
+	Sensors []string        `json:"sensors,omitempty"`
 }
 
 type RulesIdentity struct {
@@ -192,6 +206,15 @@ func (r Report) ComparisonLine() string {
 	return fmt.Sprintf("%s `%s` -> `%s` in `%s`", packageName, baseline, candidate, ecosystem)
 }
 
+func (t Telemetry) Summary() string {
+	return fmt.Sprintf(
+		"mode `%s`, status `%s`, sensors %s",
+		DisplayValue(t.Mode),
+		DisplayValue(string(t.Status)),
+		telemetrySensors(t.Sensors),
+	)
+}
+
 func (r Report) NextStep() string {
 	if r.Diagnostic != nil && r.Diagnostic.SuggestedAction != "" {
 		return r.Diagnostic.SuggestedAction
@@ -281,7 +304,9 @@ func BuildSummary(runReport Report) string {
 	lines = append(lines, fmt.Sprintf("- Fixture: %s", DisplayValue(runReport.Input.FixturePath)))
 	lines = append(lines, fmt.Sprintf("- Scenario: %s", DisplayValue(runReport.Scenario.Name)))
 	lines = append(lines, fmt.Sprintf("- Scenario path: %s", DisplayValue(runReport.Scenario.Path)))
-	lines = append(lines, fmt.Sprintf("- Host signal capture: %s", enabledDisabled(runReport.Scenario.CaptureHostSignals)))
+	lines = append(lines, fmt.Sprintf("- Telemetry mode: `%s`", DisplayValue(runReport.Telemetry.Mode)))
+	lines = append(lines, fmt.Sprintf("- Telemetry status: `%s`", DisplayValue(string(runReport.Telemetry.Status))))
+	lines = append(lines, fmt.Sprintf("- Telemetry sensors: %s", telemetrySensors(runReport.Telemetry.Sensors)))
 	lines = append(lines, fmt.Sprintf("- Rules path: %s", DisplayValue(runReport.Rules.Path)))
 	lines = append(lines, "")
 	lines = append(lines, "## Verdict", "")
@@ -326,6 +351,15 @@ func BuildSummary(runReport Report) string {
 	lines = append(lines, "## Why This Verdict", "")
 	if runReport.Diagnostic != nil {
 		lines = append(lines, "- "+runReport.Diagnostic.Summary)
+	} else if runReport.Telemetry.Status == TelemetryStatusDisabled {
+		lines = append(lines, "- Kernel-level telemetry was disabled, so this comparison requires human review.")
+		for _, hit := range runReport.RuleHits {
+			line := fmt.Sprintf("- %s matched `%s`", hit.Category, hit.RuleID)
+			if strings.TrimSpace(hit.Reason) != "" {
+				line += ": " + hit.Reason
+			}
+			lines = append(lines, line)
+		}
 	} else if len(runReport.RuleHits) == 0 {
 		lines = append(lines, "- No rules matched. The recommendation comes from the raw diff outcome.")
 	} else {
@@ -381,6 +415,18 @@ func DisplayFinding(finding Finding) string {
 	return line
 }
 
+func telemetrySensors(sensors []string) string {
+	if len(sensors) == 0 {
+		return "none"
+	}
+
+	quoted := make([]string, 0, len(sensors))
+	for _, sensor := range sensors {
+		quoted = append(quoted, "`"+sensor+"`")
+	}
+	return strings.Join(quoted, ", ")
+}
+
 func versionSummary(requested string, installed string) string {
 	requestedValue := DisplayValue(requested)
 	installedValue := DisplayValue(installed)
@@ -389,14 +435,6 @@ func versionSummary(requested string, installed string) string {
 	}
 
 	return fmt.Sprintf("requested `%s`, installed `%s`", requestedValue, installedValue)
-}
-
-func enabledDisabled(value bool) string {
-	if value {
-		return "enabled"
-	}
-
-	return "disabled"
 }
 
 func yesNo(value bool) string {

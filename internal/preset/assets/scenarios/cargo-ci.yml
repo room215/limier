@@ -4,8 +4,8 @@ repeats: 2
 workdir: /workspace
 network:
   mode: default
-evidence:
-  capture_host_signals: false
+telemetry:
+  mode: required
 success:
   exit_code: 0
 steps:

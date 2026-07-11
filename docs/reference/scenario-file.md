@@ -8,7 +8,7 @@ It answers questions like:
 - how many times should each side be repeated
 - how should the dependency be installed
 - which commands count as “exercising” the fixture
-- should networking or host-signal capture be enabled
+- is kernel telemetry required
 
 ## Minimal Example
 
@@ -20,8 +20,8 @@ image: node:22
 workdir: /workspace
 network:
   mode: default
-evidence:
-  capture_host_signals: false
+telemetry:
+  mode: required
 success:
   exit_code: 0
 steps:
@@ -96,11 +96,14 @@ Each mount has:
 
 Relative `source` paths are resolved relative to the scenario file location.
 
-### `evidence.capture_host_signals`
+### `telemetry.mode`
 
-Optional. Defaults to `true`.
+Optional. Defaults to `required`.
 
-Set it to `false` on non-Linux systems or CI environments without `bpftrace`.
+Allowed values:
+
+- `required`: kernel telemetry must complete successfully or the result is `rerun`
+- `off`: run an output-only comparison; the result requires human review even when no behavioral difference is observed
 
 ### `success.exit_code`
 
