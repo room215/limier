@@ -34,7 +34,7 @@ func TestValidateRequiresInstallAndCommands(t *testing.T) {
 	}
 }
 
-func TestLoadDefaultsHostSignalCaptureToTrue(t *testing.T) {
+func TestLoadDefaultsTelemetryToRequired(t *testing.T) {
 	t.Parallel()
 
 	manifest, err := Load(writeScenario(t, `
@@ -51,15 +51,59 @@ steps:
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if !manifest.Evidence.HostSignalsEnabled() {
-		t.Fatal("HostSignalsEnabled() = false, want true")
+	if manifest.Telemetry.Mode != TelemetryModeRequired {
+		t.Fatalf("Telemetry.Mode = %q, want %q", manifest.Telemetry.Mode, TelemetryModeRequired)
 	}
 }
 
-func TestLoadHonorsDisabledHostSignalCapture(t *testing.T) {
+func TestLoadHonorsDisabledTelemetry(t *testing.T) {
 	t.Parallel()
 
 	manifest, err := Load(writeScenario(t, `
+version: 1
+name: demo
+telemetry:
+  mode: off
+steps:
+  - name: install
+    run: install
+  - name: exercise
+    run: exercise
+    command: echo ok
+`))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if manifest.Telemetry.Mode != TelemetryModeOff {
+		t.Fatalf("Telemetry.Mode = %q, want %q", manifest.Telemetry.Mode, TelemetryModeOff)
+	}
+}
+
+func TestLoadRejectsUnknownTelemetryMode(t *testing.T) {
+	t.Parallel()
+
+	_, err := Load(writeScenario(t, `
+version: 1
+name: demo
+telemetry:
+  mode: sometimes
+steps:
+  - name: install
+    run: install
+`))
+	if err == nil {
+		t.Fatal("Load() error = nil, want telemetry validation error")
+	}
+	if !strings.Contains(err.Error(), "telemetry.mode must be required or off") {
+		t.Fatalf("Load() error = %q, want telemetry mode message", err)
+	}
+}
+
+func TestLoadRejectsDeletedEvidenceConfiguration(t *testing.T) {
+	t.Parallel()
+
+	_, err := Load(writeScenario(t, `
 version: 1
 name: demo
 evidence:
@@ -67,16 +111,24 @@ evidence:
 steps:
   - name: install
     run: install
-  - name: exercise
-    run: exercise
-    command: echo ok
 `))
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
+	if err == nil {
+		t.Fatal("Load() error = nil, want deleted evidence field error")
 	}
+	if !strings.Contains(err.Error(), "field evidence not found") {
+		t.Fatalf("Load() error = %q, want unknown evidence field message", err)
+	}
+}
 
-	if manifest.Evidence.HostSignalsEnabled() {
-		t.Fatal("HostSignalsEnabled() = true, want false")
+func TestParseTelemetryModeNormalizesInput(t *testing.T) {
+	t.Parallel()
+
+	mode, err := ParseTelemetryMode(" REQUIRED ")
+	if err != nil {
+		t.Fatalf("ParseTelemetryMode() error = %v", err)
+	}
+	if mode != TelemetryModeRequired {
+		t.Fatalf("ParseTelemetryMode() = %q, want %q", mode, TelemetryModeRequired)
 	}
 }
 

@@ -47,8 +47,8 @@ image: node:22
 workdir: /workspace
 network:
   mode: default
-evidence:
-  capture_host_signals: false
+telemetry:
+  mode: required
 success:
   exit_code: 0
 steps:
@@ -121,5 +121,5 @@ limier inspect --input out/limier/report.json
 
 - Keep fixture commands deterministic. Flaky tests produce noisy reruns.
 - Disable network with `network.mode: none` when the scenario does not need external access.
-- Turn off `capture_host_signals` on non-Linux machines or hosted runners without `bpftrace`.
+- Use `telemetry.mode: off` only for an output-only comparison; it always requires human review.
 - Upload `evidence/` as a CI artifact so reviewers can inspect raw stdout, stderr, and event capture later.

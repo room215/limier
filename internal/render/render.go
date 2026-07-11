@@ -35,6 +35,7 @@ func Inspect(runReport report.Report) string {
 	lines = append(lines, fmt.Sprintf("- Technical verdict: `%s`", runReport.TechnicalVerdict))
 	lines = append(lines, fmt.Sprintf("- Operator recommendation: `%s`", runReport.OperatorRecommendation))
 	lines = append(lines, fmt.Sprintf("- Exit code: `%d`", runReport.ExitCode))
+	lines = append(lines, "- Telemetry: "+runReport.Telemetry.Summary())
 	lines = append(lines, fmt.Sprintf("- Baseline stability: %d repeat(s), stable `%t`", runReport.Baseline.Summary.RunCount, runReport.Baseline.Stable))
 	lines = append(lines, fmt.Sprintf("- Candidate stability: %d repeat(s), stable `%t`", runReport.Candidate.Summary.RunCount, runReport.Candidate.Stable))
 
@@ -79,6 +80,7 @@ func renderSurface(runReport report.Report, title string, findingLimit int) stri
 	lines = append(lines, fmt.Sprintf("- Technical verdict: `%s`", runReport.TechnicalVerdict))
 	lines = append(lines, fmt.Sprintf("- Operator recommendation: `%s`", runReport.OperatorRecommendation))
 	lines = append(lines, fmt.Sprintf("- Exit code: `%d`", runReport.ExitCode))
+	lines = append(lines, "- Telemetry: "+runReport.Telemetry.Summary())
 	lines = append(lines, fmt.Sprintf("- Baseline stability: %d repeat(s), stable `%t`", runReport.Baseline.Summary.RunCount, runReport.Baseline.Stable))
 	lines = append(lines, fmt.Sprintf("- Candidate stability: %d repeat(s), stable `%t`", runReport.Candidate.Summary.RunCount, runReport.Candidate.Stable))
 	lines = append(lines, fmt.Sprintf("- Evidence root: `%s`", report.DisplayValue(runReport.Evidence.RootPath)))
@@ -103,6 +105,15 @@ func renderSurface(runReport report.Report, title string, findingLimit int) stri
 		lines = append(lines, fmt.Sprintf("- Diagnostic category: `%s`", runReport.Diagnostic.Category))
 		if runReport.Diagnostic.SuggestedAction != "" {
 			lines = append(lines, fmt.Sprintf("- Suggested action: %s", runReport.Diagnostic.SuggestedAction))
+		}
+	} else if runReport.Telemetry.Status == report.TelemetryStatusDisabled {
+		lines = append(lines, "- Kernel-level telemetry was disabled, so this comparison requires human review.")
+		for _, hit := range runReport.RuleHits {
+			line := fmt.Sprintf("- %s matched `%s`", hit.Category, hit.RuleID)
+			if strings.TrimSpace(hit.Reason) != "" {
+				line += ": " + hit.Reason
+			}
+			lines = append(lines, line)
 		}
 	} else if len(runReport.RuleHits) == 0 {
 		lines = append(lines, "- No rules matched. This output mirrors the report-level verdict and recommendation.")

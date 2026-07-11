@@ -41,6 +41,10 @@ Limier also records a lower-level technical verdict in the report:
 
 If you are triaging quickly, the operator recommendation is usually the more important field.
 
+## Telemetry Coverage
+
+Every completed report records its telemetry mode, status, and active sensors. Required telemetry must complete successfully before Limier can recommend `good_to_go`. Output-only runs use `telemetry.mode: off` and always require human review.
+
 ## Exit Codes
 
 Limier uses simple exit codes so CI can react without parsing JSON:
@@ -93,7 +97,7 @@ Common causes include:
 
 - Docker problems on the runner
 - non-deterministic fixture behavior
-- missing Linux host-signal support when `capture_host_signals` is enabled
+- missing Linux kernel telemetry support when `telemetry.mode` is `required`
 - scenario commands that fail before the review is complete
 
 In those cases, fix the environment or scenario first, then run the review again.

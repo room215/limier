@@ -27,6 +27,7 @@ type githubCIOptions struct {
 	fixturePath            string
 	scenarioPath           string
 	rulesPath              string
+	telemetryMode          string
 	metadataOutcome        string
 	dependencyFilesChanged string
 	prAuthor               string
@@ -92,6 +93,7 @@ func newGitHubCICommand() *cobra.Command {
 	cmd.Flags().StringVar(&options.fixturePath, "fixture", "", "Path or preset for the sample application fixture")
 	cmd.Flags().StringVar(&options.scenarioPath, "scenario", "", "Path or preset for the scenario manifest")
 	cmd.Flags().StringVar(&options.rulesPath, "rules", "", "Path or preset for the rules file")
+	cmd.Flags().StringVar(&options.telemetryMode, "telemetry-mode", "", "Telemetry mode override: required or off")
 	cmd.Flags().StringVar(&options.dependencyFilesChanged, "dependency-files-changed", "", "Whether dependency-relevant files changed: true, false, or unknown")
 
 	return cmd
@@ -132,6 +134,7 @@ func runGitHubCI(ctx context.Context, options githubCIOptions) error {
 		fixturePath:      options.fixturePath,
 		scenarioPath:     options.scenarioPath,
 		rulesPath:        options.rulesPath,
+		telemetryMode:    options.telemetryMode,
 		reportPath:       paths.reportPath,
 		summaryPath:      paths.summaryPath,
 		evidencePath:     paths.evidencePath,

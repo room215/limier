@@ -56,7 +56,7 @@ func (bpftraceFactory) Start(run RunContext) (RunCollector, error) {
 	binary, err := exec.LookPath("bpftrace")
 	if err != nil {
 		return nil, &CaptureError{
-			Op:  "start host signal collector",
+			Op:  "start telemetry collector",
 			Err: fmt.Errorf("locate bpftrace: %w", err),
 		}
 	}
@@ -299,7 +299,7 @@ func parseBpftraceEvent(line string) (Event, error) {
 	}
 
 	return Event{
-		Kind:      "process.exec",
+		Kind:      EventKindProcessExec,
 		Command:   strings.TrimSpace(parts[1]),
 		Timestamp: time.Unix(0, nsecs).UTC(),
 	}, nil

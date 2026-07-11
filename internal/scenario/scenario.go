@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -9,23 +10,25 @@ import (
 )
 
 const (
-	defaultRepeats  = 2
-	defaultWorkdir  = "/workspace"
-	defaultExitCode = 0
+	defaultRepeats                      = 2
+	defaultWorkdir                      = "/workspace"
+	defaultExitCode                     = 0
+	TelemetryModeRequired TelemetryMode = "required"
+	TelemetryModeOff      TelemetryMode = "off"
 )
 
 type Manifest struct {
-	Version  int               `yaml:"version"`
-	Name     string            `yaml:"name"`
-	Repeats  int               `yaml:"repeats"`
-	Image    string            `yaml:"image,omitempty"`
-	Workdir  string            `yaml:"workdir,omitempty"`
-	Env      map[string]string `yaml:"env,omitempty"`
-	Steps    []Step            `yaml:"steps"`
-	Success  Success           `yaml:"success,omitempty"`
-	Network  Network           `yaml:"network,omitempty"`
-	Mounts   []Mount           `yaml:"mounts,omitempty"`
-	Evidence Evidence          `yaml:"evidence,omitempty"`
+	Version   int               `yaml:"version"`
+	Name      string            `yaml:"name"`
+	Repeats   int               `yaml:"repeats"`
+	Image     string            `yaml:"image,omitempty"`
+	Workdir   string            `yaml:"workdir,omitempty"`
+	Env       map[string]string `yaml:"env,omitempty"`
+	Steps     []Step            `yaml:"steps"`
+	Success   Success           `yaml:"success,omitempty"`
+	Network   Network           `yaml:"network,omitempty"`
+	Mounts    []Mount           `yaml:"mounts,omitempty"`
+	Telemetry Telemetry         `yaml:"telemetry,omitempty"`
 }
 
 type Step struct {
@@ -48,8 +51,10 @@ type Mount struct {
 	ReadOnly bool   `yaml:"read_only,omitempty"`
 }
 
-type Evidence struct {
-	CaptureHostSignals *bool `yaml:"capture_host_signals,omitempty"`
+type TelemetryMode string
+
+type Telemetry struct {
+	Mode TelemetryMode `yaml:"mode,omitempty"`
 }
 
 func Load(path string) (Manifest, error) {
@@ -59,7 +64,9 @@ func Load(path string) (Manifest, error) {
 	}
 
 	var manifest Manifest
-	if err := yaml.Unmarshal(data, &manifest); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&manifest); err != nil {
 		return Manifest{}, fmt.Errorf("parse scenario %q: %w", path, err)
 	}
 
@@ -92,6 +99,11 @@ func (m *Manifest) applyDefaults() {
 		m.Network.Mode = "default"
 	}
 
+	if strings.TrimSpace(string(m.Telemetry.Mode)) == "" {
+		m.Telemetry.Mode = TelemetryModeRequired
+	} else {
+		m.Telemetry.Mode = TelemetryMode(strings.ToLower(strings.TrimSpace(string(m.Telemetry.Mode))))
+	}
 }
 
 func (m Manifest) Validate() error {
@@ -154,6 +166,12 @@ func (m Manifest) Validate() error {
 		problems = append(problems, "network.mode must be default or none")
 	}
 
+	switch m.Telemetry.Mode {
+	case TelemetryModeRequired, TelemetryModeOff:
+	default:
+		problems = append(problems, "telemetry.mode must be required or off")
+	}
+
 	for index, mount := range m.Mounts {
 		prefix := fmt.Sprintf("mounts[%d]", index)
 		if strings.TrimSpace(mount.Source) == "" {
@@ -180,10 +198,12 @@ func (m Manifest) StepNames() []string {
 	return names
 }
 
-func (e Evidence) HostSignalsEnabled() bool {
-	if e.CaptureHostSignals == nil {
-		return true
+func ParseTelemetryMode(value string) (TelemetryMode, error) {
+	mode := TelemetryMode(strings.ToLower(strings.TrimSpace(value)))
+	switch mode {
+	case TelemetryModeRequired, TelemetryModeOff:
+		return mode, nil
+	default:
+		return "", fmt.Errorf("telemetry mode must be required or off")
 	}
-
-	return *e.CaptureHostSignals
 }

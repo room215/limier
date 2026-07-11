@@ -9,12 +9,12 @@ This page is the fastest path to a first successful Limier run.
   - a built binary
   - the published container image
   - a local Go toolchain if you want to build from source
-- Linux plus `bpftrace` if you want host-signal capture
+- Linux plus `bpftrace` for the default required telemetry mode
 
-::: warning Host-signal capture is Linux-only
-If `capture_host_signals` is enabled and Limier cannot start that backend, the run becomes inconclusive instead of silently dropping process coverage.
+::: warning Kernel telemetry is Linux-only
+Telemetry defaults to `required`. If Limier cannot start or complete capture, the run becomes inconclusive instead of silently dropping process coverage.
 
-On macOS, Windows, or CI runners without `bpftrace`, set `capture_host_signals: false` in your scenario.
+On macOS, Windows, or CI runners without `bpftrace`, use `telemetry.mode: off` for an output-only comparison. That mode never produces a `good_to_go` recommendation.
 :::
 
 ## Installation Options

@@ -401,7 +401,7 @@ func compareExecEvents(baseline report.Run, candidate report.Run, existingFindin
 func countExecEvents(events []collector.Event) map[execEventKey]int {
 	counts := map[execEventKey]int{}
 	for _, event := range events {
-		if event.Kind != "process.exec" {
+		if event.Kind != collector.EventKindProcessExec {
 			continue
 		}
 		counts[execEventKey{

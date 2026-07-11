@@ -1,13 +1,13 @@
 {
-  "svgPath": "/Users/sardo/Projects/t/docs/diagrams/limier-operation-flow.svg",
-  "previewPath": "/Users/sardo/Projects/t/docs/diagrams/limier-operation-flow.preview.png",
+  "svgPath": "docs/diagrams/limier-operation-flow.svg",
+  "previewPath": "docs/diagrams/limier-operation-flow.preview.png",
   "screenshot": {
     "width": 4718,
-    "height": 829
+    "height": 835
   },
   "exportSummary": {
     "width": 4718,
-    "height": 829.25,
+    "height": 835,
     "exportPadding": 20
   },
   "inspectSummary": {
@@ -47,7 +47,7 @@
       "textOverlaps": 0,
       "crowdedLabels": 0,
       "diagramSprawl": 0,
-      "occupancyRatio": 0.361,
+      "occupancyRatio": 0.367,
       "maxEdgeLength": 749,
       "sameRankBentEdgeCount": 0,
       "worstEdgeDetourRatio": 3.73,
@@ -57,20 +57,15 @@
       "minX": 100,
       "minY": -235,
       "maxX": 4778,
-      "maxY": 554.25
+      "maxY": 560
     }
   },
   "warnings": [],
   "hardFailures": [],
   "passed": true,
-  "metadata": {
-    "layoutEngine": "legacy",
-    "layoutEngineReason": "manual layout remains on the deterministic legacy path",
-    "preset": "clean-flowchart"
-  },
   "policy": {
     "maxWarnings": 0,
-    "minimumEditableElements": 18,
+    "minimumEditableElements": 2,
     "requireStructuredScene": true
   },
   "manualChecklist": [

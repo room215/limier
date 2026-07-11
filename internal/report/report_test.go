@@ -15,6 +15,11 @@ func TestWriteJSONUsesLimierVersionField(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "report.json")
 	runReport := Report{
 		LimierVersion: "1.2.3",
+		Telemetry: Telemetry{
+			Mode:    "required",
+			Status:  TelemetryStatusActive,
+			Sensors: []string{"process.exec"},
+		},
 		Diagnostic: NewDiagnostic(
 			DiagnosticCategoryDocker,
 			"candidate_docker_run_failed",
@@ -39,6 +44,9 @@ func TestWriteJSONUsesLimierVersionField(t *testing.T) {
 	if !strings.Contains(contents, `"diagnostic": {`) {
 		t.Fatalf("report JSON = %q, want diagnostic field", contents)
 	}
+	if !strings.Contains(contents, `"telemetry": {`) || !strings.Contains(contents, `"status": "active"`) {
+		t.Fatalf("report JSON = %q, want active telemetry contract", contents)
+	}
 	legacyVersionField := "har" + "ness_version"
 	if strings.Contains(contents, legacyVersionField) {
 		t.Fatalf("report JSON = %q, want no legacy version field", contents)
@@ -53,6 +61,10 @@ func TestBuildSummaryUsesLimierBranding(t *testing.T) {
 
 	summary := BuildSummary(Report{
 		OperatorRecommendation: verdict.RecommendationRerun,
+		Telemetry: Telemetry{
+			Mode:   "required",
+			Status: TelemetryStatusFailed,
+		},
 		Diagnostic: NewDiagnostic(
 			DiagnosticCategoryDocker,
 			"candidate_docker_run_failed",
@@ -69,6 +81,9 @@ func TestBuildSummaryUsesLimierBranding(t *testing.T) {
 	}
 	if !strings.Contains(summary, "## Diagnostic") {
 		t.Fatalf("summary = %q, want diagnostic section", summary)
+	}
+	if !strings.Contains(summary, "Telemetry status: `failed`") {
+		t.Fatalf("summary = %q, want telemetry status", summary)
 	}
 	legacyHeading := "Har" + "ness Summary"
 	if strings.Contains(summary, legacyHeading) {

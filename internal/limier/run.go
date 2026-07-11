@@ -32,6 +32,7 @@ type Options struct {
 	ScenarioPath     string
 	RulesPath        string
 	EvidencePath     string
+	TelemetryMode    string
 }
 
 type Result struct {
@@ -73,6 +74,22 @@ func Run(ctx context.Context, options Options) Result {
 		return resultWithDiagnostic(runReport, classifyLoadDiagnostic("scenario", normalized.ScenarioPath, err))
 	}
 
+	telemetryMode, err := resolveTelemetryMode(manifest.Telemetry.Mode, normalized.TelemetryMode)
+	if err != nil {
+		runReport.Telemetry.Mode = strings.TrimSpace(normalized.TelemetryMode)
+		return resultWithDiagnostic(runReport, report.NewDiagnostic(
+			report.DiagnosticCategoryInput,
+			"telemetry_mode_invalid",
+			err.Error(),
+			"Use required or off for --telemetry-mode, then rerun Limier.",
+		))
+	}
+	manifest.Telemetry.Mode = telemetryMode
+	runReport.Telemetry.Mode = string(telemetryMode)
+	if telemetryMode == scenario.TelemetryModeOff {
+		runReport.Telemetry.Status = report.TelemetryStatusDisabled
+	}
+
 	ruleSet, err := rules.Load(normalized.RulesPath)
 	if err != nil {
 		return resultWithDiagnostic(runReport, classifyLoadDiagnostic("rules", normalized.RulesPath, err))
@@ -94,13 +111,12 @@ func Run(ctx context.Context, options Options) Result {
 	}
 
 	runReport.Scenario = report.ScenarioIdentity{
-		Name:               manifest.Name,
-		Path:               normalized.ScenarioPath,
-		Repeats:            manifest.Repeats,
-		Image:              selectedImage,
-		Workdir:            manifest.Workdir,
-		Steps:              manifest.StepNames(),
-		CaptureHostSignals: manifest.Evidence.HostSignalsEnabled(),
+		Name:    manifest.Name,
+		Path:    normalized.ScenarioPath,
+		Repeats: manifest.Repeats,
+		Image:   selectedImage,
+		Workdir: manifest.Workdir,
+		Steps:   manifest.StepNames(),
 	}
 	runReport.Rules = report.RulesIdentity{
 		Path:           normalized.RulesPath,
@@ -120,7 +136,7 @@ func Run(ctx context.Context, options Options) Result {
 	}
 
 	var collectorFactory collector.Factory
-	if manifest.Evidence.HostSignalsEnabled() {
+	if telemetryMode == scenario.TelemetryModeRequired {
 		collectorFactory = collector.NewFactory()
 	}
 	manager := docker.NewManager("docker")
@@ -165,6 +181,10 @@ func Run(ctx context.Context, options Options) Result {
 	if candidateDiagnostic != nil {
 		return resultWithDiagnostic(runReport, candidateDiagnostic)
 	}
+	if telemetryMode == scenario.TelemetryModeRequired {
+		runReport.Telemetry.Status = report.TelemetryStatusActive
+		runReport.Telemetry.Sensors = []string{collector.EventKindProcessExec}
+	}
 
 	evaluation := analysis.Evaluate(baseline, candidate, manifest.Success.ExitCode, ruleSet)
 	runReport.Findings = evaluation.Findings
@@ -173,13 +193,46 @@ func Run(ctx context.Context, options Options) Result {
 	runReport.OperatorRecommendation = evaluation.OperatorRecommendation
 	runReport.ExitCode = verdict.ExitCode(evaluation.OperatorRecommendation)
 	runReport.Diagnostic = evaluation.Diagnostic
+	applyTelemetryCoverage(&runReport)
 
 	return Result{Report: runReport}
 }
 
 func resultWithDiagnostic(runReport report.Report, diagnostic *report.Diagnostic) Result {
 	runReport.Diagnostic = diagnostic
+	if diagnostic != nil && strings.HasSuffix(diagnostic.Code, "_telemetry_capture_failed") {
+		runReport.Telemetry.Status = report.TelemetryStatusFailed
+		runReport.Telemetry.Sensors = nil
+	}
 	return Result{Report: runReport}
+}
+
+func resolveTelemetryMode(configured scenario.TelemetryMode, override string) (scenario.TelemetryMode, error) {
+	if strings.TrimSpace(override) == "" {
+		return configured, nil
+	}
+
+	mode, err := scenario.ParseTelemetryMode(override)
+	if err != nil {
+		return "", fmt.Errorf("invalid --telemetry-mode %q: %w", override, err)
+	}
+	return mode, nil
+}
+
+func applyTelemetryCoverage(runReport *report.Report) {
+	if runReport == nil || runReport.Telemetry.Status != report.TelemetryStatusDisabled {
+		return
+	}
+
+	runReport.Findings = append(runReport.Findings, report.Finding{
+		ID:      fmt.Sprintf("finding-%d", len(runReport.Findings)+1),
+		Kind:    "telemetry_coverage_incomplete",
+		Message: "Kernel-level telemetry was disabled for this comparison.",
+	})
+	if runReport.OperatorRecommendation == verdict.RecommendationGoodToGo {
+		runReport.OperatorRecommendation = verdict.RecommendationNeedsReview
+		runReport.ExitCode = verdict.ExitCode(verdict.RecommendationNeedsReview)
+	}
 }
 
 type normalizedOptions struct {
@@ -192,6 +245,7 @@ type normalizedOptions struct {
 	ScenarioPath     string
 	RulesPath        string
 	EvidencePath     string
+	TelemetryMode    string
 }
 
 func normalizeOptions(options Options) (normalizedOptions, error) {
@@ -257,6 +311,7 @@ func normalizeOptions(options Options) (normalizedOptions, error) {
 		ScenarioPath:     scenarioPath,
 		RulesPath:        rulesPath,
 		EvidencePath:     evidencePath,
+		TelemetryMode:    strings.TrimSpace(options.TelemetryMode),
 	}, nil
 }
 
@@ -351,9 +406,9 @@ func runSide(ctx context.Context, request sideRequest) (report.Side, []string, *
 				return sideReport, evidenceFiles, sideDiagnostic(
 					request.Name,
 					report.DiagnosticCategoryExecution,
-					"host_signal_capture_failed",
-					fmt.Sprintf("start %s host signal capture: %v", request.Name, err),
-					"Run Limier on Linux with host signal capture support available, or disable capture_host_signals and rerun Limier.",
+					"telemetry_capture_failed",
+					fmt.Sprintf("start %s telemetry capture: %v", request.Name, err),
+					"Run Limier on Linux with bpftrace available, or set telemetry.mode to off for an output-only comparison.",
 				)
 			}
 		}
@@ -470,9 +525,9 @@ func classifyRuntimeDiagnostic(side string, runEvidenceDir string, err error) *r
 	if errors.As(err, &captureErr) {
 		return report.NewDiagnostic(
 			report.DiagnosticCategoryExecution,
-			side+"_host_signal_capture_failed",
+			side+"_telemetry_capture_failed",
 			fmt.Sprintf("run %s scenario: %v", side, err),
-			"Run Limier on Linux with host signal capture support available, or disable capture_host_signals and rerun Limier.",
+			"Run Limier on Linux with bpftrace available, or set telemetry.mode to off for an output-only comparison.",
 			runEvidenceDir,
 		)
 	}

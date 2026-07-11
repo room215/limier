@@ -6,7 +6,7 @@ Limier is for one narrow review job: compare a baseline and candidate dependency
 
 Limier is not a general application security scanner. It does not promise to detect `SQLi`, `XSS`, CSRF, authentication bugs, or broad secure-coding flaws in the fixture application.
 
-When `capture_host_signals` is enabled, the current implementation requires Linux with `bpftrace` available. If that backend cannot start, Limier fails closed with an inconclusive rerun diagnostic instead of silently dropping process coverage.
+When `telemetry.mode` is `required`, the current implementation requires Linux with `bpftrace` available. If capture cannot complete, Limier fails closed with an inconclusive rerun diagnostic instead of silently dropping process coverage. Output-only mode always requires human review.
 
 ## Repository-Owned Validation Corpus
 
@@ -38,4 +38,4 @@ Current cases:
 - Summary, render, and inspect outputs expose repeat stability and whether a finding happened during install or execution.
 - Documentation states the narrow product scope directly and links to a runnable sample workflow.
 - Documentation distinguishes the repository-owned sample CI workflow from a real Dependabot-triggered pull-request integration.
-- Hosted GitHub Actions guidance makes the `capture_host_signals: false` versus self-hosted `bpftrace` tradeoff explicit.
+- GitHub Actions guidance makes required kernel telemetry versus output-only review semantics explicit.
