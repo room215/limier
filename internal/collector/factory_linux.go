@@ -40,6 +40,7 @@ type bpftraceStepCapture struct {
 	cmd        *exec.Cmd
 	stderr     bytes.Buffer
 	waitDone   chan struct{}
+	stdoutDone chan struct{}
 	readyCh    chan struct{}
 
 	mu         sync.Mutex
@@ -124,6 +125,7 @@ func (c *bpftraceRunCollector) StartStepCapture(ctx context.Context, step StepCo
 		scriptPath: scriptPath,
 		cmd:        cmd,
 		waitDone:   make(chan struct{}),
+		stdoutDone: make(chan struct{}),
 		readyCh:    make(chan struct{}),
 	}
 	cmd.Stderr = &stepCapture.stderr
@@ -139,8 +141,9 @@ func (c *bpftraceRunCollector) StartStepCapture(ctx context.Context, step StepCo
 	}
 
 	go func() {
+		err := cmd.Wait()
 		stepCapture.mu.Lock()
-		stepCapture.waitErr = cmd.Wait()
+		stepCapture.waitErr = err
 		stepCapture.mu.Unlock()
 		close(stepCapture.waitDone)
 	}()
@@ -173,6 +176,16 @@ func (c *bpftraceStepCapture) Finish(ctx context.Context) ([]Event, error) {
 			Op:   "finish step capture",
 			Step: c.stepName,
 			Err:  err,
+		}
+	}
+
+	select {
+	case <-c.stdoutDone:
+	case <-ctx.Done():
+		return nil, &CaptureError{
+			Op:   "finish step capture",
+			Step: c.stepName,
+			Err:  fmt.Errorf("wait for bpftrace output: %w", ctx.Err()),
 		}
 	}
 
@@ -262,6 +275,7 @@ func (c *bpftraceStepCapture) commandWaitErr() error {
 
 func (c *bpftraceStepCapture) readStdout(stdout io.ReadCloser) {
 	go func() {
+		defer close(c.stdoutDone)
 		defer stdout.Close()
 
 		scanner := bufio.NewScanner(stdout)
@@ -293,7 +307,7 @@ func (c *bpftraceStepCapture) readStdout(stdout io.ReadCloser) {
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
+		if err := scanner.Err(); err != nil && !errors.Is(err, os.ErrClosed) {
 			c.mu.Lock()
 			if c.stdoutErr == nil {
 				c.stdoutErr = fmt.Errorf("read bpftrace stdout: %w", err)
