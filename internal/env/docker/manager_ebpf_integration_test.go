@@ -4,6 +4,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -86,5 +87,76 @@ func TestManagerCapturesDockerExecWithEBPF(t *testing.T) {
 		}
 	}
 
-	t.Fatalf("captured events = %#v, want process.exec for step %q containing %q", result.Events, "eBPF smoke", ebpfSmokeMarker)
+	t.Fatalf(
+		"captured events = %#v, want process.exec for step %q containing %q; %s",
+		result.Events,
+		"eBPF smoke",
+		ebpfSmokeMarker,
+		diagnoseEBPFCgroup(ctx),
+	)
+}
+
+func diagnoseEBPFCgroup(ctx context.Context) string {
+	name := fmt.Sprintf("limier-ebpf-diagnostic-%d", time.Now().UnixNano())
+	dockerBinary, err := exec.LookPath("docker")
+	if err != nil {
+		return fmt.Sprintf("cgroup diagnostic failed to locate Docker: %v", err)
+	}
+
+	output, err := exec.CommandContext(
+		ctx,
+		dockerBinary,
+		"run",
+		"--detach",
+		"--name",
+		name,
+		"--network",
+		"none",
+		ebpfIntegrationImage,
+		"sh",
+		"-c",
+		`trap "exit 0" TERM INT; while true; do sleep 3600; done`,
+	).CombinedOutput()
+	if err != nil {
+		return fmt.Sprintf("cgroup diagnostic failed to start container: %v (output: %s)", err, strings.TrimSpace(string(output)))
+	}
+	defer exec.CommandContext(context.Background(), dockerBinary, "rm", "-f", name).Run()
+
+	cgroupPath, err := NewManager(dockerBinary).containerCgroupPath(ctx, name)
+	if err != nil {
+		return fmt.Sprintf("cgroup diagnostic failed to resolve container cgroup: %v", err)
+	}
+
+	script := fmt.Sprintf(`BEGIN
+{
+  printf("LIMIER_DIAG_TARGET\t%%llu\n", cgroupid(%q));
+}
+
+tracepoint:syscalls:sys_enter_execve,
+tracepoint:syscalls:sys_enter_execveat
+/str(args.filename) == "/bin/busybox"/
+{
+  printf("LIMIER_DIAG_ACTUAL\t%%llu\t%%d\t", cgroup, pid);
+  join(args.argv, " ");
+}
+`, cgroupPath)
+
+	childCommand := strings.Join([]string{
+		dockerBinary,
+		"exec",
+		name,
+		"/bin/busybox",
+		"echo",
+		ebpfSmokeMarker,
+	}, " ")
+	bpftrace := exec.CommandContext(ctx, "bpftrace", "-q", "-e", script, "-c", childCommand)
+	bpftrace.Env = append(os.Environ(), "BPFTRACE_MAX_STRLEN=200")
+	output, err = bpftrace.CombinedOutput()
+
+	return fmt.Sprintf(
+		"cgroup diagnostic: path=%q output=%q error=%v",
+		cgroupPath,
+		strings.TrimSpace(string(output)),
+		err,
+	)
 }
