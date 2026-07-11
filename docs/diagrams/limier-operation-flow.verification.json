@@ -3,11 +3,11 @@
   "previewPath": "docs/diagrams/limier-operation-flow.preview.png",
   "screenshot": {
     "width": 4718,
-    "height": 835
+    "height": 844
   },
   "exportSummary": {
     "width": 4718,
-    "height": 835,
+    "height": 844,
     "exportPadding": 20
   },
   "inspectSummary": {
@@ -47,17 +47,17 @@
       "textOverlaps": 0,
       "crowdedLabels": 0,
       "diagramSprawl": 0,
-      "occupancyRatio": 0.367,
+      "occupancyRatio": 0.383,
       "maxEdgeLength": 749,
       "sameRankBentEdgeCount": 0,
-      "worstEdgeDetourRatio": 3.73,
+      "worstEdgeDetourRatio": 4.16,
       "longEdgeNormalized": 3
     },
     "bounds": {
       "minX": 100,
       "minY": -235,
       "maxX": 4778,
-      "maxY": 560
+      "maxY": 629
     }
   },
   "warnings": [],
@@ -65,7 +65,7 @@
   "passed": true,
   "policy": {
     "maxWarnings": 0,
-    "minimumEditableElements": 2,
+    "minimumEditableElements": 18,
     "requireStructuredScene": true
   },
   "manualChecklist": [

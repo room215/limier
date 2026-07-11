@@ -6,7 +6,7 @@ Limier is for one narrow review job: compare a baseline and candidate dependency
 
 Limier is not a general application security scanner. It does not promise to detect `SQLi`, `XSS`, CSRF, authentication bugs, or broad secure-coding flaws in the fixture application.
 
-When `telemetry.mode` is `required`, the current implementation requires Linux with `bpftrace` available. If capture cannot complete, Limier fails closed with an inconclusive rerun diagnostic instead of silently dropping process coverage. Output-only mode always requires human review.
+When `telemetry.mode` is `required`, the current implementation requires Linux, cgroup v2, eBPF support, and `bpftrace`. If capture cannot complete, Limier fails closed with an inconclusive rerun diagnostic instead of silently dropping process coverage. Output-only mode always requires human review.
 
 ## Repository-Owned Validation Corpus
 
@@ -26,7 +26,7 @@ Current cases:
 - Security engineer: inspect a report where a candidate introduces a new helper process and confirm the report surfaces the changed step, phase, and evidence path.
 - Security or platform reviewer: inspect a blocked install-time network fetch and confirm the default rules make the hard-block reason explicit.
 - CI operator: inspect an inconclusive report and use `summary.md`, `report.json`, and `limier inspect` to understand why the run should be rerun.
-- Platform or security engineer: wire Limier into Dependabot pull requests and understand when a hosted runner should use stdout/stderr-only capture versus a self-hosted Linux runner with `bpftrace`.
+- Platform or security engineer: wire Limier into Dependabot pull requests and confirm that `telemetry.mode: required` fails closed when kernel telemetry is unavailable, while `telemetry.mode: off` produces an output-only result that requires human review.
 
 ## Launch Checklist
 
