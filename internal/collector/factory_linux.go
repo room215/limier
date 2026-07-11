@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	bpftraceReadyMarker   = "LIMIER_READY"
-	bpftraceEventPrefix   = "LIMIER_EVENT\t"
-	bpftraceStartTimeout  = 10 * time.Second
-	bpftraceMaxStringSize = "4096"
+	bpftraceReadyMarker  = "LIMIER_READY"
+	bpftraceEventPrefix  = "LIMIER_EVENT\t"
+	bpftraceStartTimeout = 10 * time.Second
+	// Stack-backed bpftrace releases, including Ubuntu's package, cap strings at 200 bytes.
+	bpftracePortableMaxStringSize = "200"
 )
 
 type bpftraceFactory struct{}
@@ -106,7 +107,7 @@ func (c *bpftraceRunCollector) StartStepCapture(ctx context.Context, step StepCo
 	}
 
 	cmd := exec.Command(c.binary, "-q", scriptPath)
-	cmd.Env = append(os.Environ(), "BPFTRACE_MAX_STRLEN="+bpftraceMaxStringSize)
+	cmd.Env = append(os.Environ(), "BPFTRACE_MAX_STRLEN="+bpftracePortableMaxStringSize)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		_ = os.Remove(scriptPath)
